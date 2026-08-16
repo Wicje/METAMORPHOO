@@ -3,8 +3,19 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ArrowLeft, Check, Sparkles, ShieldCheck } from 'lucide-react';
+import {
+  X,
+  ArrowLeft,
+  Check,
+  ShieldCheck,
+  Ruler,
+  FileBadge,
+  Bookmark,
+  BookmarkCheck,
+} from 'lucide-react';
 import { Item, Look } from '../lib/types';
+import { CURRENCIES, useCurrency } from '../lib/currency';
+import { ledgerStore, useLedger } from '../lib/ledger-store';
 
 interface ItemDetailModalProps {
   item: Item | null;
@@ -23,14 +34,28 @@ export default function ItemDetailModal({
 }: ItemDetailModalProps) {
   const [selectedSize, setSelectedSize] = useState<string>(item?.sizes[0] || 'Standard');
   const [added, setAdded] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'fit' | 'provenance'>('details');
+
+  const currency = useCurrency();
+  const ledger = useLedger();
+  const isSaved = item ? ledger.savedItems.some((i) => i.itemId === item.id) : false;
 
   if (!item) return null;
+
+  const currentCurrencyConfig = CURRENCIES[currency] || CURRENCIES.USD;
+  const formattedPrice = currentCurrencyConfig.format(item.price);
 
   const handleAdd = () => {
     onAddToWardrobe(item, originatingLook?.name || 'Metamorphoo Edit', selectedSize);
     setAdded(true);
     setTimeout(() => setAdded(false), 2500);
   };
+
+  const handleToggleSave = () => {
+    ledgerStore.toggleSaveItem(item.id, originatingLook?.id || 'general', originatingLook?.name || 'Metamorphoo Edit');
+  };
+
+  const isVaulted = originatingLook?.status === 'vaulted';
 
   return (
     <AnimatePresence>
@@ -54,23 +79,48 @@ export default function ItemDetailModal({
             </span>
           )}
 
-          <button
-            id="close-item-modal-btn"
-            onClick={onClose}
-            className="group flex items-center space-x-2 text-[#E8E0D5]/70 hover:text-[#E8E0D5] p-2 focus:outline-none transition-colors"
-          >
-            <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] hidden sm:inline-block">
-              CLOSE
-            </span>
-            <X className="w-5 h-5 transition-transform group-hover:rotate-90" />
-          </button>
+          <div className="flex items-center space-x-4">
+            {/* Save to Private Ledger */}
+            <button
+              id="save-item-to-ledger-btn"
+              onClick={handleToggleSave}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 border transition-all text-[10px] uppercase tracking-[0.2em] font-montserrat ${
+                isSaved
+                  ? 'border-[#C4623A] bg-[#C4623A]/10 text-[#F5EFE4]'
+                  : 'border-[#E8E0D5]/20 text-[#E8E0D5]/70 hover:border-[#E8E0D5]/60'
+              }`}
+            >
+              {isSaved ? (
+                <>
+                  <BookmarkCheck className="w-3.5 h-3.5 text-[#C4623A]" />
+                  <span>SAVED TO LEDGER</span>
+                </>
+              ) : (
+                <>
+                  <Bookmark className="w-3.5 h-3.5" />
+                  <span>RECORD IN LEDGER</span>
+                </>
+              )}
+            </button>
+
+            <button
+              id="close-item-modal-btn"
+              onClick={onClose}
+              className="group flex items-center space-x-2 text-[#E8E0D5]/70 hover:text-[#E8E0D5] p-2 focus:outline-none transition-colors"
+            >
+              <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] hidden sm:inline-block">
+                CLOSE
+              </span>
+              <X className="w-5 h-5 transition-transform group-hover:rotate-90" />
+            </button>
+          </div>
         </div>
 
-        {/* Garment Showcase (Minimal, Spacious, Garment Breathes) */}
+        {/* Garment Showcase */}
         <div className="max-w-6xl mx-auto px-6 sm:px-12 py-6 sm:py-12">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-start">
             {/* Left: Clean Editorial Image */}
-            <div className="md:col-span-6 relative aspect-[3/4] bg-[#14110E] overflow-hidden">
+            <div className="md:col-span-6 relative aspect-[3/4] bg-[#14110E] overflow-hidden sticky top-28">
               <Image
                 src={item.image}
                 alt={item.name}
@@ -80,26 +130,28 @@ export default function ItemDetailModal({
                 referrerPolicy="no-referrer"
               />
 
-              {/* EDIT Label (Top-Left, Montserrat 9-10px, Mediterranean Sand) */}
-              {item.tier === 'EDIT' ? (
-                <div className="absolute top-4 left-4 z-10">
-                  <span className="font-montserrat text-[9px] sm:text-[10px] uppercase tracking-[0.25em] text-[#C9B89A] bg-[#1A1611]/80 px-2.5 py-1">
+              {/* Status or Tier Badge */}
+              <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5">
+                {item.tier === 'EDIT' ? (
+                  <span className="font-montserrat text-[9px] sm:text-[10px] uppercase tracking-[0.25em] text-[#C9B89A] bg-[#1A1611]/80 px-2.5 py-1 backdrop-blur-sm">
                     EDIT
                   </span>
-                </div>
-              ) : (
-                /* ORIGINALS Monogram (Bottom-Right, MΦ Hairline Bone) */
-                <div className="absolute bottom-4 right-4 z-10">
+                ) : (
                   <span className="font-cormorant text-base tracking-[0.3em] text-[#E8E0D5]/80 bg-[#1A1611]/80 px-2 py-0.5">
                     MΦ ORIGINALS
                   </span>
-                </div>
-              )}
+                )}
+                {isVaulted && (
+                  <span className="font-montserrat text-[8px] uppercase tracking-[0.25em] text-[#E8E0D5] bg-[#C4623A]/90 px-2 py-0.5">
+                    VAULTED EDITION
+                  </span>
+                )}
+              </div>
             </div>
 
-            {/* Right: Garment Typography & Addition */}
+            {/* Right: Garment Architecture & Inspectors */}
             <div className="md:col-span-6 space-y-7">
-              {/* Category & Tier */}
+              {/* Category & Origin */}
               <div className="flex items-center space-x-3">
                 <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] text-[#C9B89A]">
                   {item.category}
@@ -110,40 +162,182 @@ export default function ItemDetailModal({
                 </span>
               </div>
 
-              {/* Name: Cormorant Light */}
+              {/* Name */}
               <h1 className="font-cormorant font-light text-3xl sm:text-4xl lg:text-5xl text-[#E8E0D5] uppercase tracking-[0.14em] leading-tight">
                 {item.name}
               </h1>
 
-              {/* Price */}
-              <div className="font-montserrat text-lg text-[#E8E0D5] tracking-widest">
-                ${item.price} <span className="text-xs text-[#E8E0D5]/60">{item.currency}</span>
+              {/* Price & Currency Note */}
+              <div className="space-y-1">
+                <div className="font-montserrat text-xl text-[#E8E0D5] tracking-widest font-light">
+                  {formattedPrice}
+                </div>
+                <div className="font-montserrat text-[9px] text-[#E8E0D5]/50 tracking-wider">
+                  {currentCurrencyConfig.gatewayNote}
+                </div>
               </div>
 
-              {/* Description */}
-              <p className="font-montserrat text-xs text-[#E8E0D5]/80 font-light leading-relaxed">
-                {item.description}
-              </p>
+              {/* Navigational Sub-Tabs for Fit & Provenance Protocol */}
+              <div className="flex border-b border-[#E8E0D5]/15 pt-2">
+                <button
+                  id="tab-item-details"
+                  onClick={() => setActiveTab('details')}
+                  className={`py-2 px-3 font-montserrat text-[10px] uppercase tracking-[0.22em] transition-colors relative ${
+                    activeTab === 'details' ? 'text-[#E8E0D5] font-medium' : 'text-[#E8E0D5]/50 hover:text-[#E8E0D5]'
+                  }`}
+                >
+                  PIECE DETAILS
+                  {activeTab === 'details' && (
+                    <motion.div layoutId="itemTab" className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#E8E0D5]" />
+                  )}
+                </button>
 
-              {/* Silhouette / Fit Structure */}
-              <div className="space-y-1.5 pt-2">
-                <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/50 block">
-                  SILHOUETTE & PROPORTION
-                </span>
-                <p className="font-montserrat text-xs text-[#E8E0D5]/70">
-                  {item.silhouette}
-                </p>
+                <button
+                  id="tab-item-fit"
+                  onClick={() => setActiveTab('fit')}
+                  className={`py-2 px-3 font-montserrat text-[10px] uppercase tracking-[0.22em] transition-colors relative flex items-center space-x-1.5 ${
+                    activeTab === 'fit' ? 'text-[#E8E0D5] font-medium' : 'text-[#E8E0D5]/50 hover:text-[#E8E0D5]'
+                  }`}
+                >
+                  <Ruler className="w-3 h-3 text-[#C9B89A]" />
+                  <span>FIT & DRAPE</span>
+                  {activeTab === 'fit' && (
+                    <motion.div layoutId="itemTab" className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#E8E0D5]" />
+                  )}
+                </button>
+
+                <button
+                  id="tab-item-provenance"
+                  onClick={() => setActiveTab('provenance')}
+                  className={`py-2 px-3 font-montserrat text-[10px] uppercase tracking-[0.22em] transition-colors relative flex items-center space-x-1.5 ${
+                    activeTab === 'provenance' ? 'text-[#E8E0D5] font-medium' : 'text-[#E8E0D5]/50 hover:text-[#E8E0D5]'
+                  }`}
+                >
+                  <FileBadge className="w-3 h-3 text-[#C9B89A]" />
+                  <span>PROVENANCE</span>
+                  {activeTab === 'provenance' && (
+                    <motion.div layoutId="itemTab" className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#E8E0D5]" />
+                  )}
+                </button>
               </div>
 
-              {/* Material Composition: Montserrat, small, muted */}
-              <div className="space-y-1.5 pt-2 border-t border-[#E8E0D5]/10">
-                <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/50 block">
-                  MATERIAL COMPOSITION
-                </span>
-                <p className="font-montserrat text-xs text-[#E8E0D5]/90 tracking-wide font-normal">
-                  {item.composition}
-                </p>
-              </div>
+              {/* Tab 1: Standard Details */}
+              {activeTab === 'details' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  {/* Description */}
+                  <p className="font-montserrat text-xs text-[#E8E0D5]/80 font-light leading-relaxed">
+                    {item.description}
+                  </p>
+
+                  {/* Silhouette */}
+                  <div className="space-y-1.5">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/50 block">
+                      SILHOUETTE & PROPORTION
+                    </span>
+                    <p className="font-montserrat text-xs text-[#E8E0D5]/70">
+                      {item.silhouette}
+                    </p>
+                  </div>
+
+                  {/* Material Composition */}
+                  <div className="space-y-1.5 pt-2 border-t border-[#E8E0D5]/10">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/50 block">
+                      MATERIAL COMPOSITION
+                    </span>
+                    <p className="font-montserrat text-xs text-[#E8E0D5]/90 tracking-wide font-normal">
+                      {item.composition}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Tab 2: Fit & Drape Protocol */}
+              {activeTab === 'fit' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-5 bg-[#14110E] p-5 border border-[#E8E0D5]/10"
+                >
+                  <div className="space-y-1">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C9B89A]">
+                      CUT CLASSIFICATION
+                    </span>
+                    <p className="font-montserrat text-xs text-[#E8E0D5] font-medium">
+                      {item.fitGuidance?.cut || 'Tailored Architectural Drop'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1 pt-2 border-t border-[#E8E0D5]/10">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C9B89A]">
+                      DRAPE DENSITY & FABRIC WEIGHT
+                    </span>
+                    <p className="font-montserrat text-xs text-[#E8E0D5]/80">
+                      {item.fitGuidance?.drapeWeight || '320gsm Heavyweight Archival'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1 pt-2 border-t border-[#E8E0D5]/10">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C9B89A]">
+                      EDITORIAL MODEL SPECIFICATIONS
+                    </span>
+                    <p className="font-montserrat text-xs text-[#E8E0D5]/80 font-light leading-relaxed">
+                      {item.fitGuidance?.modelStats || 'Model is 187cm / 6\'1.5", 76kg, wearing Size L for natural drop.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1 pt-2 border-t border-[#E8E0D5]/10">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C9B89A]">
+                      SIZING DIRECTIVE
+                    </span>
+                    <p className="font-montserrat text-xs text-[#E8E0D5]/80 font-light leading-relaxed">
+                      {item.fitGuidance?.recommendedSizing || 'Take your standard size for intentional volume.'}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Tab 3: Provenance & Condition Certificate */}
+              {activeTab === 'provenance' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-5 bg-[#14110E] p-5 border border-[#E8E0D5]/10"
+                >
+                  <div className="space-y-1">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C9B89A]">
+                      PIECE CONDITION & INTEGRITY
+                    </span>
+                    <p className="font-montserrat text-xs text-[#E8E0D5] font-medium">
+                      {item.provenance?.condition || 'Brand New / Pristine Deadstock'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1 pt-2 border-t border-[#E8E0D5]/10">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C9B89A]">
+                      AUTHENTICATION & INSPECTION
+                    </span>
+                    <p className="font-montserrat text-xs text-[#E8E0D5]/80">
+                      {item.provenance?.inspectionBy || 'Ani Chisom & Metamorphoo Curatorial Bureau'}
+                    </p>
+                    <p className="font-montserrat text-[10px] text-[#E8E0D5]/50 italic">
+                      Zero synthetic tension · Hand-verified grain and welt integrity.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1 pt-2 border-t border-[#E8E0D5]/10">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C9B89A]">
+                      DISPATCH PACKAGING
+                    </span>
+                    <p className="font-montserrat text-xs text-[#E8E0D5]/80 font-light leading-relaxed">
+                      {item.provenance?.packaging || 'Archival Breathable Cotton Travel Garment Case + Cedar Block'}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Size Selection */}
               <div className="space-y-3 pt-2">
@@ -160,12 +354,13 @@ export default function ItemDetailModal({
                     <button
                       key={size}
                       id={`size-btn-${size}`}
+                      disabled={isVaulted}
                       onClick={() => setSelectedSize(size)}
                       className={`px-4 py-2 text-xs font-montserrat tracking-widest uppercase transition-all duration-200 border ${
                         selectedSize === size
                           ? 'border-[#E8E0D5] bg-[#E8E0D5] text-[#1A1611] font-medium'
                           : 'border-[#E8E0D5]/20 text-[#E8E0D5]/70 hover:border-[#E8E0D5]/60'
-                      }`}
+                      } ${isVaulted ? 'opacity-40 cursor-not-allowed' : ''}`}
                     >
                       {size}
                     </button>
@@ -173,28 +368,47 @@ export default function ItemDetailModal({
                 </div>
               </div>
 
-              {/* Add to Wardrobe (not "Add to Cart" — language matters) */}
+              {/* Add to Wardrobe or Inquire for Vaulted */}
               <div className="pt-4 space-y-4">
-                <button
-                  id="add-to-wardrobe-btn"
-                  onClick={handleAdd}
-                  className="w-full group py-4 px-6 border border-[#E8E0D5] hover:border-[#C4623A] bg-[#1A1611] hover:bg-[#C4623A] text-[#E8E0D5] hover:text-[#F5EFE4] transition-all duration-300 flex items-center justify-center space-x-3 focus:outline-none"
-                >
-                  {added ? (
-                    <>
-                      <Check className="w-4 h-4 text-[#F5EFE4]" />
-                      <span className="font-montserrat text-xs uppercase tracking-[0.28em] font-medium">
-                        ADDED TO WARDROBE
+                {isVaulted ? (
+                  <div className="space-y-3">
+                    <div className="p-4 bg-[#14110E] border border-[#C4623A]/40 text-center space-y-1.5">
+                      <span className="font-montserrat text-[9px] uppercase tracking-[0.28em] text-[#C4623A] block font-medium">
+                        VAULTED ARCHIVAL EDITION
                       </span>
-                    </>
-                  ) : (
-                    <span className="font-montserrat text-xs uppercase tracking-[0.28em] font-medium">
-                      ADD TO WARDROBE
-                    </span>
-                  )}
-                </button>
+                      <p className="font-montserrat text-xs text-[#E8E0D5]/80 font-light">
+                        This look is archived. Retained in the permanent register. Inquire for private ATELIER bespoke re-commission.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => onReturnToLook(originatingLook!)}
+                      className="w-full py-4 border border-[#E8E0D5]/40 text-[#E8E0D5] font-montserrat text-xs uppercase tracking-[0.25em] hover:border-[#E8E0D5] transition-colors"
+                    >
+                      INQUIRE VIA ATELIER CONCIERGE
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    id="add-to-wardrobe-btn"
+                    onClick={handleAdd}
+                    className="w-full group py-4 px-6 border border-[#E8E0D5] hover:border-[#C4623A] bg-[#1A1611] hover:bg-[#C4623A] text-[#E8E0D5] hover:text-[#F5EFE4] transition-all duration-300 flex items-center justify-center space-x-3 focus:outline-none"
+                  >
+                    {added ? (
+                      <>
+                        <Check className="w-4 h-4 text-[#F5EFE4]" />
+                        <span className="font-montserrat text-xs uppercase tracking-[0.28em] font-medium">
+                          ADDED TO WARDROBE
+                        </span>
+                      </>
+                    ) : (
+                      <span className="font-montserrat text-xs uppercase tracking-[0.28em] font-medium">
+                        ADD TO WARDROBE
+                      </span>
+                    )}
+                  </button>
+                )}
 
-                {/* Complete the Look link back to originating look */}
+                {/* Complete the Look link */}
                 {originatingLook && (
                   <button
                     id="complete-the-look-btn"
@@ -206,7 +420,7 @@ export default function ItemDetailModal({
                 )}
               </div>
 
-              {/* Footer Curation Note: Selected by METAMORPHOO. Curated to standard. */}
+              {/* Footer Curation Note */}
               <div className="pt-4 border-t border-[#E8E0D5]/10 flex items-center space-x-2 text-[#E8E0D5]/50">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#C9B89A]" />
                 <p className="font-montserrat text-[10px] italic">

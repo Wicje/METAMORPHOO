@@ -10,15 +10,18 @@ import EditDirectoryView from '../components/EditDirectoryView';
 import OriginalsView from '../components/OriginalsView';
 import WardrobeDrawer from '../components/WardrobeDrawer';
 import CuratorLedgerModal from '../components/CuratorLedgerModal';
-import { LAUNCH_LOOKS } from '../lib/data';
+import LedgerModal from '../components/LedgerModal';
+import ArchiveVaultView from '../components/ArchiveVaultView';
+import { LAUNCH_LOOKS, ARCHIVE_VAULT_LOOKS } from '../lib/data';
 import { Look, Item, CartItem } from '../lib/types';
 import { useCart } from '../lib/cart-store';
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<'wardrobe' | 'edit' | 'originals' | 'house'>('wardrobe');
+  const [activeTab, setActiveTab] = useState<'wardrobe' | 'archive' | 'edit' | 'originals' | 'house'>('wardrobe');
   const [selectedLook, setSelectedLook] = useState<Look | null>(null);
   const [selectedItem, setSelectedItem] = useState<{ item: Item; look: Look | null } | null>(null);
   const [isWardrobeDrawerOpen, setIsWardrobeDrawerOpen] = useState(false);
+  const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
   const [isManifestoOpen, setIsManifestoOpen] = useState(false);
   const [cartItems, setCartItems] = useCart();
 
@@ -96,14 +99,14 @@ export default function HomePage() {
       {/* Universal Sticky Minimalist Navbar */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={(tab) => {
-          setActiveTab(tab);
+        onSelectTab={(tab) => {
+          setActiveTab(tab as any);
           setSelectedLook(null);
           setSelectedItem(null);
         }}
-        wardrobeCount={totalItemCount}
-        onOpenWardrobe={() => setIsWardrobeDrawerOpen(true)}
-        onOpenManifesto={() => setIsManifestoOpen(true)}
+        cartCount={totalItemCount}
+        onOpenCart={() => setIsWardrobeDrawerOpen(true)}
+        onOpenLedger={() => setIsLedgerModalOpen(true)}
       />
 
       {/* Main View Router */}
@@ -113,6 +116,14 @@ export default function HomePage() {
           onSelectLook={(look) => setSelectedLook(look)}
           onSelectItem={(item, look) => setSelectedItem({ item, look })}
           onShopFullLook={handleShopFullLook}
+        />
+      )}
+
+      {activeTab === 'archive' && (
+        <ArchiveVaultView
+          vaultLooks={ARCHIVE_VAULT_LOOKS}
+          onSelectLook={(look) => setSelectedLook(look)}
+          onSelectItem={(item, look) => setSelectedItem({ item, look })}
         />
       )}
 
@@ -171,7 +182,7 @@ export default function HomePage() {
         />
       )}
 
-      {/* Wardrobe Cart Drawer */}
+      {/* Wardrobe Acquisition Drawer */}
       <WardrobeDrawer
         isOpen={isWardrobeDrawerOpen}
         onClose={() => setIsWardrobeDrawerOpen(false)}
@@ -179,6 +190,20 @@ export default function HomePage() {
         onRemoveItem={handleRemoveCartItem}
         onUpdateQuantity={handleUpdateQuantity}
         onClearWardrobe={handleClearWardrobe}
+      />
+
+      {/* Private Client Ledger Modal */}
+      <LedgerModal
+        isOpen={isLedgerModalOpen}
+        onClose={() => setIsLedgerModalOpen(false)}
+        onSelectLook={(look) => {
+          setSelectedLook(look);
+          setIsLedgerModalOpen(false);
+        }}
+        onSelectItem={(item, look) => {
+          setSelectedItem({ item, look });
+          setIsLedgerModalOpen(false);
+        }}
       />
 
       {/* Curator's Editorial Brief & Criteria Modal */}
@@ -208,6 +233,15 @@ export default function HomePage() {
               className="hover:text-[#E8E0D5] transition-colors"
             >
               The Wardrobe
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('archive');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="hover:text-[#E8E0D5] transition-colors"
+            >
+              Archive Vault
             </button>
             <button
               onClick={() => {
