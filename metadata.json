@@ -1,0 +1,6 @@
+{
+  "name": "METAMORPHOO",
+  "description": "A cinematic luxury wardrobe of complete decisions and curated editorial looks.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
