@@ -104,45 +104,45 @@ export default function OriginalsView({ onExploreWardrobe }: OriginalsViewProps)
   ];
 
   return (
-    <div id="originals-page" className="w-full min-h-screen bg-[#1A1611] text-[#E8E0D5] pt-28 pb-32">
+    <div id="originals-page" className="w-full min-h-screen bg-[var(--bg-surface)] text-[var(--text-primary)] pt-24 sm:pt-28 pb-32 transition-colors duration-300">
       <div className="max-w-5xl mx-auto px-6 sm:px-12 space-y-20">
         {/* Header Title */}
         <div className="space-y-6 text-center max-w-3xl mx-auto">
           <div className="flex items-center justify-center space-x-3">
-            <span className="font-cormorant text-base tracking-[0.3em] text-[#E8E0D5]/70">
+            <span className="font-cormorant text-base tracking-[0.3em] text-[var(--text-secondary)]">
               MΦ
             </span>
-            <span className="text-[#E8E0D5]/30">·</span>
-            <span className="font-montserrat text-[10px] uppercase tracking-[0.3em] text-[#C9B89A]">
+            <span className="text-[var(--text-muted)]">·</span>
+            <span className="font-montserrat text-[10px] uppercase tracking-[0.3em] text-[var(--color-sand)] font-medium">
               PHASE 02 PREVIEW
             </span>
           </div>
 
-          <h1 className="font-cormorant font-light text-5xl sm:text-7xl lg:text-8xl uppercase tracking-[0.18em] text-[#E8E0D5] leading-none">
+          <h1 className="font-cormorant font-light text-5xl sm:text-7xl lg:text-8xl uppercase tracking-[0.18em] text-[var(--text-primary)] leading-none">
             ORIGINALS
           </h1>
 
-          <p className="font-montserrat text-xs sm:text-sm text-[#E8E0D5]/80 font-light leading-relaxed">
-            Where <span className="text-[#C9B89A]">EDIT</span> represents the relentless curation of existing masterworks, <span className="text-[#E8E0D5] font-medium">ORIGINALS</span> represents our own manufacture. Designed by Ani Chisom and crafted in strictly numbered editions across Portugal, Italy, and West Africa.
+          <p className="font-montserrat text-xs sm:text-sm text-[var(--text-secondary)] font-light leading-relaxed">
+            Where <span className="text-[var(--color-sand)] font-medium">EDIT</span> represents the relentless curation of existing masterworks, <span className="text-[var(--text-primary)] font-medium">ORIGINALS</span> represents our own manufacture. Designed by Ani Chisom and crafted in strictly numbered editions across Portugal, Italy, and West Africa.
           </p>
         </div>
 
         {/* Monogram Distinction Feature */}
-        <div className="bg-[#14110E] p-8 sm:p-12 border border-[#E8E0D5]/15 flex flex-col md:flex-row items-center gap-8 sm:gap-12">
-          <div className="w-32 h-32 flex-shrink-0 border border-[#E8E0D5]/20 flex items-center justify-center bg-[#1A1611]">
-            <span className="font-cormorant text-5xl font-light tracking-[0.25em] text-[#E8E0D5] select-none pl-2">
+        <div className="bg-[var(--bg-canvas)] p-8 sm:p-12 border border-[var(--border-subtle)] flex flex-col md:flex-row items-center gap-8 sm:gap-12">
+          <div className="w-32 h-32 flex-shrink-0 border border-[var(--border-medium)] flex items-center justify-center bg-[var(--bg-surface)]">
+            <span className="font-cormorant text-5xl font-light tracking-[0.25em] text-[var(--text-primary)] select-none pl-2">
               MΦ
             </span>
           </div>
 
           <div className="space-y-3 text-left">
-            <span className="font-montserrat text-[9px] uppercase tracking-[0.3em] text-[#C9B89A]">
+            <span className="font-montserrat text-[9px] uppercase tracking-[0.3em] text-[var(--color-sand)] font-medium">
               THE IDENTIFIER
             </span>
-            <h2 className="font-cormorant text-2xl sm:text-3xl text-[#E8E0D5] font-light uppercase tracking-wider">
+            <h2 className="font-cormorant text-2xl sm:text-3xl text-[var(--text-primary)] font-light uppercase tracking-wider">
               The Hairline MΦ Monogram
             </h2>
-            <p className="font-montserrat text-xs text-[#E8E0D5]/70 font-light leading-relaxed">
+            <p className="font-montserrat text-xs text-[var(--text-secondary)] font-light leading-relaxed">
               ORIGINALS carry no exterior logos or marketing badges. Instead, each manufactured piece is signed with a discrete, tone-on-tone hairline MΦ monogram at the inner hem, signifying bespoke yarn spinning, hand-finished canvas, and archival preservation.
             </p>
           </div>
@@ -151,10 +151,10 @@ export default function OriginalsView({ onExploreWardrobe }: OriginalsViewProps)
         {/* Preview Capsule Pieces Under Development */}
         <div className="space-y-8">
           <div className="text-center space-y-2">
-            <span className="font-montserrat text-[9px] uppercase tracking-[0.3em] text-[#C9B89A]">
+            <span className="font-montserrat text-[9px] uppercase tracking-[0.3em] text-[var(--color-sand)] font-medium">
               IN PRODUCTION
             </span>
-            <h2 className="font-cormorant text-3xl sm:text-4xl text-[#E8E0D5] font-light uppercase tracking-[0.16em]">
+            <h2 className="font-cormorant text-3xl sm:text-4xl text-[var(--text-primary)] font-light uppercase tracking-[0.16em]">
               INCOMING INAUGURAL CAPSULE
             </h2>
           </div>
@@ -163,36 +163,36 @@ export default function OriginalsView({ onExploreWardrobe }: OriginalsViewProps)
             {previewPieces.map((piece, i) => (
               <div
                 key={i}
-                className="bg-[#14110E] border border-[#E8E0D5]/10 flex flex-col justify-between overflow-hidden"
+                className="bg-[var(--bg-canvas)] border border-[var(--border-subtle)] flex flex-col justify-between overflow-hidden group hover:border-[var(--border-medium)] transition-all"
               >
-                <div className="relative aspect-[3/4] w-full bg-[#1A1611]">
+                <div className="relative aspect-[3/4] w-full bg-[var(--bg-surface)]">
                   <Image
                     src={piece.image}
                     alt={piece.title}
                     fill
-                    className="object-cover object-center grayscale contrast-125"
+                    className="object-cover object-center grayscale contrast-125 group-hover:scale-102 transition-transform duration-700"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute inset-0 bg-[#1A1611]/30" />
+                  <div className="absolute inset-0 bg-[var(--bg-surface)]/20" />
                   <div className="absolute bottom-3 right-3 z-10">
-                    <span className="font-cormorant text-sm tracking-[0.3em] text-[#E8E0D5]/80 bg-[#1A1611]/80 px-2 py-0.5">
+                    <span className="font-cormorant text-sm tracking-[0.3em] text-[var(--text-primary)] bg-[var(--bg-surface)]/80 px-2 py-0.5 border border-[var(--border-subtle)]">
                       MΦ
                     </span>
                   </div>
                 </div>
 
                 <div className="p-6 space-y-3">
-                  <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[#C9B89A] block">
+                  <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--color-sand)] block font-medium">
                     {piece.edition} · {piece.origin}
                   </span>
-                  <h3 className="font-cormorant text-xl text-[#E8E0D5] font-light leading-snug">
+                  <h3 className="font-cormorant text-xl text-[var(--text-primary)] font-light leading-snug">
                     {piece.title}
                   </h3>
-                  <p className="font-montserrat text-[11px] text-[#E8E0D5]/60">
+                  <p className="font-montserrat text-[11px] text-[var(--text-secondary)] font-light">
                     {piece.composition}
                   </p>
-                  <div className="pt-2 border-t border-[#E8E0D5]/10">
-                    <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[#E8E0D5]/40">
+                  <div className="pt-2 border-t border-[var(--border-subtle)]">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
                       STATUS: {piece.status}
                     </span>
                   </div>
@@ -203,40 +203,40 @@ export default function OriginalsView({ onExploreWardrobe }: OriginalsViewProps)
         </div>
 
         {/* Private Capsule Notification */}
-        <div className="bg-[#14110E] p-8 sm:p-12 border border-[#E8E0D5]/15 max-w-2xl mx-auto text-center space-y-6">
-          <span className="font-montserrat text-[9px] uppercase tracking-[0.3em] text-[#C9B89A]">
+        <div className="bg-[var(--bg-canvas)] p-8 sm:p-12 border border-[var(--border-subtle)] max-w-2xl mx-auto text-center space-y-6">
+          <span className="font-montserrat text-[9px] uppercase tracking-[0.3em] text-[var(--color-sand)] font-medium">
             EARLY DISPATCH
           </span>
-          <h3 className="font-cormorant text-3xl text-[#E8E0D5] font-light uppercase tracking-wider">
+          <h3 className="font-cormorant text-3xl text-[var(--text-primary)] font-light uppercase tracking-wider">
             PRIVATE RELEASE REGISTRATION
           </h3>
-          <p className="font-montserrat text-xs text-[#E8E0D5]/70 font-light max-w-md mx-auto">
+          <p className="font-montserrat text-xs text-[var(--text-secondary)] font-light max-w-md mx-auto">
             Numbered ORIGINALS editions are allocated strictly in order of registration before public disclosure.
           </p>
 
           {joinedWaitlist ? (
-            <div className="p-6 border border-[#C9B89A]/40 bg-[#14110E] space-y-4 max-w-lg mx-auto text-left">
-              <div className="flex items-center space-x-3 pb-3 border-b border-[#E8E0D5]/10">
-                <div className="w-8 h-8 rounded-full bg-[#C9B89A]/10 border border-[#C9B89A] flex items-center justify-center text-[#C9B89A] flex-shrink-0">
+            <div className="p-6 border border-[var(--color-sand)]/40 bg-[var(--bg-surface)] space-y-4 max-w-lg mx-auto text-left">
+              <div className="flex items-center space-x-3 pb-3 border-b border-[var(--border-subtle)]">
+                <div className="w-8 h-8 rounded-full bg-[var(--color-sand)]/10 border border-[var(--color-sand)] flex items-center justify-center text-[var(--color-sand)] flex-shrink-0">
                   <Check className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C9B89A] block">
+                  <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)] block font-medium">
                     ARCHIVE REGISTRATION CONFIRMED
                   </span>
-                  <h4 className="font-cormorant text-xl text-[#E8E0D5] font-light uppercase tracking-wide">
+                  <h4 className="font-cormorant text-xl text-[var(--text-primary)] font-light uppercase tracking-wide">
                     ALLOCATION REGISTRY NO. {registeredId || 'ORIGINALS-01'}
                   </h4>
                 </div>
               </div>
 
-              <div className="space-y-1.5 font-montserrat text-xs text-[#E8E0D5]/80">
+              <div className="space-y-1.5 font-montserrat text-xs text-[var(--text-secondary)]">
                 <div className="flex justify-between">
-                  <span className="text-[#C9B89A]">REGISTERED CLIENT:</span>
-                  <span>{email}</span>
+                  <span className="text-[var(--color-sand)] font-medium">REGISTERED CLIENT:</span>
+                  <span className="text-[var(--text-primary)]">{email}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#C9B89A]">PROTOCOL:</span>
+                  <span className="text-[var(--color-sand)] font-medium">PROTOCOL:</span>
                   <span>Early Private Access (48hr Priority Window)</span>
                 </div>
               </div>
@@ -256,7 +256,7 @@ export default function OriginalsView({ onExploreWardrobe }: OriginalsViewProps)
                 <button
                   type="button"
                   onClick={() => setJoinedWaitlist(false)}
-                  className="py-3 px-4 border border-[#E8E0D5]/20 hover:border-[#E8E0D5] text-[#E8E0D5]/70 hover:text-[#E8E0D5] font-montserrat text-[10px] uppercase tracking-[0.2em] transition-colors text-center"
+                  className="py-3 px-4 border border-[var(--border-medium)] hover:border-[var(--text-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-montserrat text-[10px] uppercase tracking-[0.2em] transition-colors text-center"
                 >
                   REGISTER ANOTHER EMAIL
                 </button>
@@ -270,13 +270,13 @@ export default function OriginalsView({ onExploreWardrobe }: OriginalsViewProps)
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter confidential email for numbered allocation"
-                className="w-full bg-[#1A1611] border border-[#E8E0D5]/20 px-4 py-3 text-xs text-[#E8E0D5] font-montserrat placeholder-[#E8E0D5]/30 text-center focus:outline-none focus:border-[#E8E0D5]"
+                className="w-full bg-[var(--bg-surface)] border border-[var(--border-medium)] px-4 py-3 text-xs text-[var(--text-primary)] font-montserrat placeholder-[var(--text-muted)] text-center focus:outline-none focus:border-[var(--text-primary)] transition-colors"
               />
               <button
                 type="submit"
                 id="originals-register-btn"
                 disabled={isSubmitting}
-                className="w-full py-3.5 border border-[#E8E0D5] hover:border-[#C4623A] bg-[#1A1611] hover:bg-[#C4623A] text-[#E8E0D5] hover:text-[#F5EFE4] transition-all font-montserrat text-xs uppercase tracking-[0.25em] font-medium"
+                className="w-full py-3.5 border border-[var(--text-primary)] hover:border-[var(--color-rust)] bg-[var(--bg-surface)] hover:bg-[var(--color-rust)] text-[var(--text-primary)] hover:text-[#F5EFE4] transition-all font-montserrat text-xs uppercase tracking-[0.25em] font-medium"
               >
                 {isSubmitting ? 'RECORDING IN ARCHIVE...' : 'REQUEST ALLOCATION ACCESS'}
               </button>
@@ -288,7 +288,7 @@ export default function OriginalsView({ onExploreWardrobe }: OriginalsViewProps)
         <div className="text-center pt-4">
           <button
             onClick={onExploreWardrobe}
-            className="group relative font-montserrat text-[11px] uppercase tracking-[0.28em] text-[#E8E0D5] hover:text-[#C4623A] transition-colors py-2 inline-flex items-center space-x-2"
+            className="group relative font-montserrat text-[11px] uppercase tracking-[0.28em] text-[var(--text-primary)] hover:text-[var(--color-rust)] transition-colors py-2 inline-flex items-center space-x-2"
           >
             <span>EXPLORE LIVE WARDROBE LOOKS</span>
             <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />

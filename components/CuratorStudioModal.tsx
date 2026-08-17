@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useEffect } from 'react';
+import { AnimatePresence } from 'motion/react';
 import {
   X,
   Plus,
@@ -12,12 +12,18 @@ import {
   Eye,
   RefreshCw,
   ShieldCheck,
+  Database,
+  ArrowDownToLine,
+  Sun,
+  Moon,
+  FileSpreadsheet,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Look, Item } from '../lib/types';
 import { catalogStore, useCatalog } from '../lib/catalog-store';
 import { CURRENCIES, useCurrency } from '../lib/currency';
 import { BRAND_STORY } from '../lib/data';
+import { useTheme, themeStore } from '../lib/theme';
 
 interface CuratorStudioModalProps {
   isOpen: boolean;
@@ -45,12 +51,46 @@ export default function CuratorStudioModal({
 }: CuratorStudioModalProps) {
   const catalog = useCatalog();
   const currency = useCurrency();
+  const theme = useTheme();
   const currencyConfig = CURRENCIES[currency] || CURRENCIES.USD;
 
-  const [activeTab, setActiveTab] = useState<'create' | 'manage' | 'governance'>('create');
+  const [activeTab, setActiveTab] = useState<'notion' | 'create' | 'manage' | 'governance'>('notion');
   const [copiedJSON, setCopiedJSON] = useState(false);
+  const [copiedNotionGuide, setCopiedNotionGuide] = useState(false);
   const [importJSONText, setImportJSONText] = useState('');
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  // Notion Sync State with lazy local storage recovery
+  const [notionApiKey, setNotionApiKey] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('metamorphoo_notion_key') || '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+
+  const [notionDbId, setNotionDbId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('metamorphoo_notion_db') || '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+
+  const [notionSyncing, setNotionSyncing] = useState(false);
+  const [notionSyncResult, setNotionSyncResult] = useState<{
+    success?: boolean;
+    totalSynced?: number;
+    source?: string;
+    message?: string;
+  } | null>(null);
+  const [rawNotionTableText, setRawNotionTableText] = useState('');
 
   // Form State for creating a new Look
   const [lookName, setLookName] = useState('');
@@ -104,7 +144,143 @@ export default function CuratorStudioModal({
 
   if (!isOpen) return null;
 
-  // Add empty piece
+  // Save Notion credentials
+  const handleSaveNotionCreds = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('metamorphoo_notion_key', notionApiKey);
+        localStorage.setItem('metamorphoo_notion_db', notionDbId);
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  // Perform Live Notion Database Sync via Server API
+  const handleLiveNotionSync = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    handleSaveNotionCreds();
+    setNotionSyncing(true);
+    setNotionSyncResult(null);
+
+    try {
+      const res = await fetch('/api/notion/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: notionApiKey.trim(),
+          databaseId: notionDbId.trim(),
+          manualJsonText: rawNotionTableText.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success && Array.isArray(data.looks)) {
+        // Partition looks into active launch looks and archive looks
+        const activeLooks = data.looks.filter((l: any) => !l.isArchive && l.seasonCode !== 'ARCHIVE_VAULT');
+        const archiveLooks = data.looks.filter((l: any) => l.isArchive || l.seasonCode === 'ARCHIVE_VAULT');
+
+        catalogStore.save({
+          customLaunchLooks: activeLooks.length > 0 ? activeLooks : data.looks,
+          customArchiveLooks: archiveLooks.length > 0 ? archiveLooks : catalog.customArchiveLooks,
+          activeSeasonTitle: data.looks[0]?.season || catalog.activeSeasonTitle,
+        });
+
+        setNotionSyncResult({
+          success: true,
+          totalSynced: data.totalSynced || data.looks.length,
+          source: data.source,
+          message: `Synchronized ${data.totalSynced || data.looks.length} looks and complete garment allocations from Notion!`,
+        });
+      } else {
+        setNotionSyncResult({
+          success: false,
+          message: data.error || data.details || 'Failed to query Notion API. Verify Database ID & Token permissions.',
+        });
+      }
+    } catch (err: any) {
+      setNotionSyncResult({
+        success: false,
+        message: err?.message || 'Network error during Notion synchronization.',
+      });
+    } finally {
+      setNotionSyncing(false);
+    }
+  };
+
+  // One-Click Download of Notion CSV Template
+  const handleDownloadNotionTemplate = () => {
+    const csvContent =
+      'Look Name,Season,Tier,Occasion,Statement Quote,Thesis,One Rule Broken,Primary Piece,Primary Piece Price,Primary Composition,Secondary Piece,Secondary Piece Price,Secondary Composition,Hero Image,Secondary Image,Status,Archive\n' +
+      '"THE SOVEREIGN FLUIDITY","Season I: The Inaugural Wardrobe","EDIT","Trans-continental Transit / Embassy Salon","A complete decision in raw unbleached natural cloth.","Composed with generous chest ease to allow dramatic motion.","Unstructured architectural ease with tailored rigor.","Unstructured Double-Breasted Raw Flax Trench",680,"420gsm Organic Raw Flax","Fluid Pleated Wide-Leg Tropical Wool Trousers",340,"290gsm High-Twist Tropical Wool","https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=1200&auto=format&fit=crop","https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=1200&auto=format&fit=crop","Active","False"\n' +
+      '"THE NOCTURNE RITUAL","Season I: The Inaugural Wardrobe","EDIT","Private Dinner / Nocturnal Salon","Architectural weight rendered in smoked black silk.","Rich smoked umber and obsidian drape designed for dusk.","Smoked obsidian silk worn without synthetic shoulder pad tension.","Smoked Mulberry Silk Evening Robe",720,"380gsm Heavyweight Mulberry Silk","Obsidian High-Twist Relaxed Trousers",360,"310gsm Italian Tropical Wool","https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=1200&auto=format&fit=crop","https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1200&auto=format&fit=crop","Active","False"';
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'metamorphoo_notion_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export Current Storefront to Notion CSV
+  const handleExportStorefrontToNotionCSV = () => {
+    const allLooks = [...catalog.customLaunchLooks, ...catalog.customArchiveLooks];
+    const header =
+      'Look Name,Season,Tier,Occasion,Statement Quote,Thesis,One Rule Broken,Primary Piece,Primary Piece Price,Primary Composition,Secondary Piece,Secondary Piece Price,Secondary Composition,Hero Image,Secondary Image,Status,Archive\n';
+
+    const rows = allLooks
+      .map((l) => {
+        const p1 = l.items[0] || { name: 'Garment 01', price: 250, composition: '100% Natural Fibre' };
+        const p2 = l.items[1] || { name: 'Garment 02', price: 200, composition: '100% Natural Fibre' };
+        return `"${l.name.replace(/"/g, '""')}","${l.season.replace(/"/g, '""')}","${l.tier}","${l.occasion.replace(/"/g, '""')}","${l.statementQuote.replace(/"/g, '""')}","${l.longThesis.replace(/"/g, '""')}","${l.oneRuleBroken.replace(/"/g, '""')}","${p1.name.replace(/"/g, '""')}",${p1.price},"${p1.composition.replace(/"/g, '""')}","${p2.name.replace(/"/g, '""')}",${p2.price},"${p2.composition.replace(/"/g, '""')}","${l.heroImage}","${l.galleryImages?.[1]?.url || l.heroImage}","${l.status === 'vaulted' ? 'Vaulted' : 'Active'}","${l.seasonCode === 'ARCHIVE_VAULT' ? 'True' : 'False'}"`;
+      })
+      .join('\n');
+
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `metamorphoo_notion_export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleCopyNotionGuide = () => {
+    const guide = `# METAMORPHOO Notion Database Setup Guide
+
+Create a new Database table in your Notion Workspace named "Metamorphoo Collection", with the following properties:
+
+1. **Look Name** (Title) — e.g. "THE MEDITERRANEAN EMBASSY"
+2. **Season** (Select) — e.g. "Season I: The Inaugural Wardrobe"
+3. **Tier** (Select) — "EDIT" | "ARCHIVE" | "ORIGINAL"
+4. **Occasion** (Text) — e.g. "Trans-continental Transit / Embassy Salon"
+5. **Statement Quote** (Text) — e.g. "A complete decision in raw unbleached natural cloth."
+6. **Thesis** (Text) — Editorial rationale and setting description
+7. **One Rule Broken** (Text) — e.g. "Unstructured ease with tailored rigor"
+8. **Primary Piece** (Text) — Outerwear / Main piece name
+9. **Primary Piece Price** (Number) — e.g. 680
+10. **Primary Composition** (Text) — e.g. "420gsm Organic Raw Flax & Silk"
+11. **Secondary Piece** (Text) — Trouser / Secondary piece name
+12. **Secondary Piece Price** (Number) — e.g. 340
+13. **Secondary Composition** (Text) — e.g. "290gsm High-Twist Tropical Wool"
+14. **Hero Image** (URL or Files) — High-res editorial photo URL
+15. **Secondary Image** (URL or Files) — Detail / tactile photo URL
+16. **Status** (Select) — "Active" | "Vaulted"
+17. **Archive** (Checkbox or Select) — "True" if placing in Archive Vault
+
+Connect your database in Metamorphoo Atelier Studio by entering your Notion Database ID and Internal Integration Token!`;
+
+    navigator.clipboard.writeText(guide);
+    setCopiedNotionGuide(true);
+    setTimeout(() => setCopiedNotionGuide(false), 3000);
+  };
+
+  // Add empty piece to manual form
   const handleAddPiece = () => {
     const newPiece: DraftPiece = {
       id: `draft-piece-${Date.now()}`,
@@ -248,93 +424,408 @@ export default function CuratorStudioModal({
     <AnimatePresence>
       <div className="fixed inset-0 z-50 overflow-y-auto bg-[var(--bg-canvas)]/95 backdrop-blur-xl text-[var(--text-primary)]">
         {/* Top Header Bar */}
-        <div className="sticky top-0 z-30 flex items-center justify-between px-6 sm:px-12 py-5 bg-[var(--bg-surface)]/90 border-b border-[var(--border-subtle)]">
+        <div className="sticky top-0 z-30 flex items-center justify-between px-6 sm:px-12 py-5 bg-[var(--bg-surface)]/95 border-b border-[var(--border-subtle)]">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-full border border-[var(--color-sand)] flex items-center justify-center text-[var(--color-sand)] bg-[var(--bg-canvas)]">
-              <Sparkles className="w-4 h-4" />
+              <Database className="w-4 h-4" />
             </div>
             <div>
               <span className="font-montserrat text-[9px] uppercase tracking-[0.3em] text-[var(--color-sand)] block">
                 METAMORPHOO PRIVATE DESK
               </span>
               <h2 className="font-cormorant text-2xl uppercase tracking-wider text-[var(--text-primary)]">
-                ATELIER CURATOR STUDIO
+                ATELIER CURATOR & NOTION STUDIO
               </h2>
             </div>
           </div>
 
           {/* Tab Navigation */}
-          <div className="hidden md:flex items-center space-x-2 bg-[var(--bg-canvas)] p-1 border border-[var(--border-subtle)]">
+          <div className="hidden md:flex items-center space-x-1.5 bg-[var(--bg-canvas)] p-1 border border-[var(--border-subtle)]">
+            <button
+              onClick={() => setActiveTab('notion')}
+              className={`px-3.5 py-1.5 font-montserrat text-[10px] uppercase tracking-[0.2em] transition-colors flex items-center space-x-1.5 ${
+                activeTab === 'notion'
+                  ? 'bg-[var(--text-primary)] text-[var(--bg-surface)] font-semibold'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <Database className="w-3 h-3 text-[var(--color-sand)]" />
+              <span>Notion Live Sync</span>
+            </button>
             <button
               onClick={() => setActiveTab('create')}
-              className={`px-4 py-2 font-montserrat text-[10px] uppercase tracking-[0.2em] transition-colors ${
+              className={`px-3.5 py-1.5 font-montserrat text-[10px] uppercase tracking-[0.2em] transition-colors ${
                 activeTab === 'create'
                   ? 'bg-[var(--text-primary)] text-[var(--bg-surface)] font-semibold'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
             >
-              + Upload New Look
+              + Quick Look Builder
             </button>
             <button
               onClick={() => setActiveTab('manage')}
-              className={`px-4 py-2 font-montserrat text-[10px] uppercase tracking-[0.2em] transition-colors ${
+              className={`px-3.5 py-1.5 font-montserrat text-[10px] uppercase tracking-[0.2em] transition-colors ${
                 activeTab === 'manage'
                   ? 'bg-[var(--text-primary)] text-[var(--bg-surface)] font-semibold'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
             >
-              Catalog & JSON Sync ({catalog.customLaunchLooks.length + catalog.customArchiveLooks.length})
+              Catalog & JSON ({catalog.customLaunchLooks.length + catalog.customArchiveLooks.length})
             </button>
             <button
               onClick={() => setActiveTab('governance')}
-              className={`px-4 py-2 font-montserrat text-[10px] uppercase tracking-[0.2em] transition-colors ${
+              className={`px-3.5 py-1.5 font-montserrat text-[10px] uppercase tracking-[0.2em] transition-colors ${
                 activeTab === 'governance'
                   ? 'bg-[var(--text-primary)] text-[var(--bg-surface)] font-semibold'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
             >
-              Editorial Doctrine
+              Doctrine
             </button>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors focus:outline-none flex items-center space-x-2"
-          >
-            <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] hidden sm:inline-block">
-              CLOSE STUDIO
-            </span>
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center space-x-3">
+            {/* Palette Switcher in Studio Header */}
+            <button
+              onClick={() => themeStore.toggleTheme()}
+              className="px-2.5 py-1.5 border border-[var(--border-subtle)] hover:border-[var(--border-medium)] bg-[var(--bg-canvas)] text-[var(--text-primary)] font-montserrat text-[9px] uppercase tracking-wider flex items-center space-x-1.5 transition-colors"
+              title="Toggle Bone / Obsidian view"
+            >
+              {theme === 'obsidian' ? (
+                <>
+                  <Moon className="w-3 h-3 text-[var(--color-sand)]" />
+                  <span className="hidden sm:inline">OBSIDIAN MODE</span>
+                </>
+              ) : (
+                <>
+                  <Sun className="w-3 h-3 text-[var(--color-rust)]" />
+                  <span className="hidden sm:inline">BONE MODE</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors focus:outline-none flex items-center space-x-2"
+            >
+              <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] hidden sm:inline-block">
+                CLOSE
+              </span>
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Mobile Tab Switcher */}
         <div className="md:hidden flex border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
           <button
+            onClick={() => setActiveTab('notion')}
+            className={`flex-1 py-3 text-center font-montserrat text-[9px] uppercase tracking-wider ${
+              activeTab === 'notion' ? 'text-[var(--text-primary)] border-b-2 border-[var(--color-sand)] font-medium' : 'text-[var(--text-muted)]'
+            }`}
+          >
+            Notion Sync
+          </button>
+          <button
             onClick={() => setActiveTab('create')}
-            className={`flex-1 py-3 text-center font-montserrat text-[10px] uppercase tracking-wider ${
+            className={`flex-1 py-3 text-center font-montserrat text-[9px] uppercase tracking-wider ${
               activeTab === 'create' ? 'text-[var(--text-primary)] border-b-2 border-[var(--color-sand)]' : 'text-[var(--text-muted)]'
             }`}
           >
-            Upload Look
+            Upload
           </button>
           <button
             onClick={() => setActiveTab('manage')}
-            className={`flex-1 py-3 text-center font-montserrat text-[10px] uppercase tracking-wider ${
+            className={`flex-1 py-3 text-center font-montserrat text-[9px] uppercase tracking-wider ${
               activeTab === 'manage' ? 'text-[var(--text-primary)] border-b-2 border-[var(--color-sand)]' : 'text-[var(--text-muted)]'
             }`}
           >
-            Catalog Sync
+            Catalog
           </button>
           <button
             onClick={() => setActiveTab('governance')}
-            className={`flex-1 py-3 text-center font-montserrat text-[10px] uppercase tracking-wider ${
+            className={`flex-1 py-3 text-center font-montserrat text-[9px] uppercase tracking-wider ${
               activeTab === 'governance' ? 'text-[var(--text-primary)] border-b-2 border-[var(--color-sand)]' : 'text-[var(--text-muted)]'
             }`}
           >
             Doctrine
           </button>
         </div>
+
+        {/* Tab 0: NOTION LIVE SYNC & MANAGEMENT (RECOMMENDED & PREFERRED) */}
+        {activeTab === 'notion' && (
+          <div className="max-w-5xl mx-auto px-6 sm:px-12 py-10 space-y-10">
+            {/* Notion Hero Intro */}
+            <div className="p-8 bg-[var(--bg-surface)] border border-[var(--border-medium)] relative overflow-hidden space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-2 max-w-2xl">
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-0.5 bg-[var(--color-rust)]/20 text-[var(--color-rust)] border border-[var(--color-rust)]/30 text-[9px] font-montserrat uppercase tracking-[0.25em] font-medium">
+                      RECOMMENDED WORKFLOW
+                    </span>
+                    <span className="text-[10px] font-montserrat text-[var(--color-sand)]">
+                      $0.00 ZERO-COST ARCHITECTURE
+                    </span>
+                  </div>
+                  <h3 className="font-cormorant text-3xl sm:text-4xl text-[var(--text-primary)] font-light uppercase tracking-wider">
+                    Notion Collection Management & Live Sync
+                  </h3>
+                  <p className="font-montserrat text-xs text-[var(--text-secondary)] font-light leading-relaxed">
+                    Manage all Metamorphoo lookbook collections, garment prices, fabrics, and photography directly inside your familiar Notion workspace. Update rows in Notion to publish instantly to the storefront without touching code.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleDownloadNotionTemplate}
+                    className="px-4 py-2.5 bg-[var(--text-primary)] hover:bg-[var(--text-primary)]/90 text-[var(--bg-surface)] font-montserrat text-[10px] uppercase tracking-[0.22em] font-semibold flex items-center justify-center space-x-2 transition-colors"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                    <span>DOWNLOAD NOTION TEMPLATE</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleExportStorefrontToNotionCSV}
+                    className="px-4 py-2.5 border border-[var(--border-medium)] hover:border-[var(--color-sand)] text-[var(--text-primary)] font-montserrat text-[10px] uppercase tracking-[0.22em] flex items-center justify-center space-x-2 transition-colors"
+                  >
+                    <ArrowDownToLine className="w-3.5 h-3.5 text-[var(--color-sand)]" />
+                    <span>EXPORT STOREFRONT TO NOTION</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Sync Feedback Banner */}
+            {notionSyncResult && (
+              <div
+                className={`p-4 border font-montserrat text-xs flex items-start justify-between gap-4 ${
+                  notionSyncResult.success
+                    ? 'bg-[var(--bg-surface)] border-[#25D366] text-[#25D366]'
+                    : 'bg-[var(--bg-surface)] border-[var(--color-rust)] text-[var(--color-rust)]'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  {notionSyncResult.success ? (
+                    <Check className="w-4 h-4 shrink-0" />
+                  ) : (
+                    <X className="w-4 h-4 shrink-0" />
+                  )}
+                  <span>{notionSyncResult.message}</span>
+                </div>
+                <button
+                  onClick={() => setNotionSyncResult(null)}
+                  className="text-[10px] opacity-70 hover:opacity-100 uppercase tracking-wider"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {/* Direct Notion API Connection Box */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <div className="lg:col-span-7 space-y-6">
+                <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-5">
+                  <div className="border-b border-[var(--border-subtle)] pb-3 flex items-center justify-between">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)] block font-medium">
+                      STEP 1 · NOTION API INTEGRATION
+                    </span>
+                    <span className="text-[9px] font-montserrat text-[var(--text-muted)]">
+                      Instant Live Fetch
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)] block mb-1.5">
+                        NOTION INTERNAL INTEGRATION SECRET (API TOKEN)
+                      </label>
+                      <input
+                        type="password"
+                        value={notionApiKey}
+                        onChange={(e) => setNotionApiKey(e.target.value)}
+                        placeholder="secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        className="w-full bg-[var(--bg-canvas)] border border-[var(--border-medium)] px-4 py-2.5 text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-[var(--text-primary)]"
+                      />
+                      <span className="text-[9px] text-[var(--text-muted)] font-montserrat mt-1 block">
+                        Obtain in 10 seconds at <a href="https://www.notion.so/my-integrations" target="_blank" rel="noreferrer" className="text-[var(--color-sand)] underline">notion.so/my-integrations</a>
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)] block mb-1.5">
+                        NOTION DATABASE ID OR DATABASE URL
+                      </label>
+                      <input
+                        type="text"
+                        value={notionDbId}
+                        onChange={(e) => setNotionDbId(e.target.value)}
+                        placeholder="e.g. 1a2b3c4d5e6f7a8b9c0d or full Notion database URL"
+                        className="w-full bg-[var(--bg-canvas)] border border-[var(--border-medium)] px-4 py-2.5 text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-[var(--text-primary)]"
+                      />
+                      <span className="text-[9px] text-[var(--text-muted)] font-montserrat mt-1 block">
+                        Found in your Notion database share URL (the 32-character string between / and ?v=)
+                      </span>
+                    </div>
+
+                    <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleLiveNotionSync}
+                        disabled={notionSyncing || (!notionApiKey.trim() && !rawNotionTableText.trim())}
+                        className="w-full sm:w-auto px-6 py-3 bg-[var(--color-sand)] hover:opacity-90 disabled:opacity-40 text-[var(--bg-canvas)] font-montserrat text-xs uppercase tracking-[0.22em] font-semibold transition-colors flex items-center justify-center space-x-2"
+                      >
+                        {notionSyncing ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>SYNCING FROM NOTION...</span>
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            <span>SYNC FROM NOTION NOW</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSaveNotionCreds}
+                        className="text-[10px] font-montserrat uppercase tracking-[0.2em] text-[var(--text-muted)] hover:text-[var(--text-primary)] underline py-2"
+                      >
+                        Save Credentials
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Direct Notion Table Paste Fallback (Zero Config) */}
+                <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-4">
+                  <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-2">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)] block font-medium">
+                      STEP 2 (OPTIONAL) · PASTE NOTION TABLE / JSON DIRECTLY
+                    </span>
+                    <span className="text-[9px] font-montserrat text-[var(--text-muted)]">
+                      Zero-API-Key Path
+                    </span>
+                  </div>
+
+                  <textarea
+                    rows={4}
+                    value={rawNotionTableText}
+                    onChange={(e) => setRawNotionTableText(e.target.value)}
+                    placeholder='Paste Notion JSON export, look manifest, or table text here...'
+                    className="w-full bg-[var(--bg-canvas)] border border-[var(--border-medium)] px-4 py-3 text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-[var(--text-primary)] resize-none"
+                  />
+
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => handleLiveNotionSync()}
+                      disabled={!rawNotionTableText.trim()}
+                      className="px-4 py-2 bg-[var(--bg-elevated)] hover:bg-[var(--border-medium)] disabled:opacity-40 text-[var(--text-primary)] font-montserrat text-[10px] uppercase tracking-[0.2em] transition-colors"
+                    >
+                      PARSE & SYNC PASTED PAYLOAD
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRawNotionTableText('')}
+                      className="text-[9px] font-montserrat text-[var(--text-muted)] hover:text-[var(--color-rust)] uppercase"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notion Field Guide & 1-Click Setup */}
+              <div className="lg:col-span-5 space-y-6">
+                <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-4">
+                  <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)] font-medium">
+                      NOTION TABLE PROPERTIES
+                    </span>
+                    <button
+                      onClick={handleCopyNotionGuide}
+                      className="text-[9px] font-montserrat uppercase tracking-wider text-[var(--color-sand)] hover:text-[var(--text-primary)] flex items-center space-x-1"
+                    >
+                      <Copy className="w-3 h-3" />
+                      <span>{copiedNotionGuide ? 'COPIED!' : 'COPY SCHEMA'}</span>
+                    </button>
+                  </div>
+
+                  <ul className="space-y-2 text-[10px] font-montserrat text-[var(--text-secondary)]">
+                    <li className="flex items-start justify-between border-b border-[var(--border-subtle)] pb-1.5">
+                      <span className="font-medium text-[var(--text-primary)]">Look Name</span>
+                      <span className="text-[var(--color-sand)]">Title</span>
+                    </li>
+                    <li className="flex items-start justify-between border-b border-[var(--border-subtle)] pb-1.5">
+                      <span className="font-medium text-[var(--text-primary)]">Season</span>
+                      <span className="text-[var(--color-sand)]">Select / Text</span>
+                    </li>
+                    <li className="flex items-start justify-between border-b border-[var(--border-subtle)] pb-1.5">
+                      <span className="font-medium text-[var(--text-primary)]">Tier</span>
+                      <span className="text-[var(--color-sand)]">EDIT | ARCHIVE</span>
+                    </li>
+                    <li className="flex items-start justify-between border-b border-[var(--border-subtle)] pb-1.5">
+                      <span className="font-medium text-[var(--text-primary)]">Occasion</span>
+                      <span className="text-[var(--color-sand)]">Text</span>
+                    </li>
+                    <li className="flex items-start justify-between border-b border-[var(--border-subtle)] pb-1.5">
+                      <span className="font-medium text-[var(--text-primary)]">One Rule Broken</span>
+                      <span className="text-[var(--color-rust)]">Required Doctrine</span>
+                    </li>
+                    <li className="flex items-start justify-between border-b border-[var(--border-subtle)] pb-1.5">
+                      <span className="font-medium text-[var(--text-primary)]">Primary Piece & Price</span>
+                      <span className="text-[var(--color-sand)]">Text & Number</span>
+                    </li>
+                    <li className="flex items-start justify-between border-b border-[var(--border-subtle)] pb-1.5">
+                      <span className="font-medium text-[var(--text-primary)]">Secondary Piece & Price</span>
+                      <span className="text-[var(--color-sand)]">Text & Number</span>
+                    </li>
+                    <li className="flex items-start justify-between">
+                      <span className="font-medium text-[var(--text-primary)]">Hero Image</span>
+                      <span className="text-[var(--color-sand)]">URL or Files</span>
+                    </li>
+                  </ul>
+
+                  <div className="pt-2">
+                    <p className="text-[9px] font-montserrat text-[var(--text-muted)] leading-relaxed">
+                      Tip: Clicking &quot;Download Notion Template&quot; gives you a pre-filled CSV you can import into Notion in 1 second.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Staging Status Summary */}
+                <div className="p-6 bg-[var(--bg-canvas)] border border-[var(--border-medium)] space-y-3">
+                  <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)] block font-medium">
+                    STOREFRONT LIVE STATS
+                  </span>
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+                      <div className="font-cormorant text-2xl text-[var(--text-primary)] font-light">
+                        {catalog.customLaunchLooks.length}
+                      </div>
+                      <div className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)]">
+                        Active Looks
+                      </div>
+                    </div>
+                    <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+                      <div className="font-cormorant text-2xl text-[var(--text-primary)] font-light">
+                        {catalog.customArchiveLooks.length}
+                      </div>
+                      <div className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)]">
+                        Vaulted Looks
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tab 1: Create / Upload New Look */}
         {activeTab === 'create' && (
@@ -448,92 +939,87 @@ export default function CuratorStudioModal({
 
                     <div className="space-y-1">
                       <label className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)] block">
-                        OCCASION
+                        HEX COLORS (COMMA SEPARATED)
                       </label>
                       <input
                         type="text"
-                        value={occasion}
-                        onChange={(e) => setOccasion(e.target.value)}
-                        placeholder="Diplomatic Trans-continental Transit"
+                        value={paletteColorsText}
+                        onChange={(e) => setPaletteColorsText(e.target.value)}
+                        placeholder="#E8E0D5, #1A1611, #C4623A"
                         className="w-full bg-[var(--bg-canvas)] border border-[var(--border-medium)] px-4 py-3 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
                       />
                     </div>
                   </div>
 
-                  {/* Photography URLs */}
-                  <div className="space-y-3 pt-2">
-                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)] block">
-                      CINEMATIC EDITORIAL IMAGERY (3:4 PORTRAIT)
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="font-montserrat text-[8px] uppercase tracking-[0.2em] text-[var(--text-muted)] block mb-1">
-                          HERO FULL-BODY IMAGE URL
-                        </label>
-                        <input
-                          type="url"
-                          required
-                          value={heroImage}
-                          onChange={(e) => setHeroImage(e.target.value)}
-                          placeholder="https://images.unsplash.com/..."
-                          className="w-full bg-[var(--bg-canvas)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
-                        />
-                      </div>
-                      <div>
-                        <label className="font-montserrat text-[8px] uppercase tracking-[0.2em] text-[var(--text-muted)] block mb-1">
-                          SECONDARY ANGLE / DETAIL URL
-                        </label>
-                        <input
-                          type="url"
-                          value={secondaryImage}
-                          onChange={(e) => setSecondaryImage(e.target.value)}
-                          placeholder="https://images.unsplash.com/..."
-                          className="w-full bg-[var(--bg-canvas)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
-                        />
-                      </div>
+                  {/* Imagery URLs */}
+                  <div className="space-y-4 pt-2 border-t border-[var(--border-subtle)]">
+                    <div className="space-y-1">
+                      <label className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)] block">
+                        HERO EDITORIAL PHOTOGRAPHY URL *
+                      </label>
+                      <input
+                        type="url"
+                        required
+                        value={heroImage}
+                        onChange={(e) => setHeroImage(e.target.value)}
+                        placeholder="https://..."
+                        className="w-full bg-[var(--bg-canvas)] border border-[var(--border-medium)] px-4 py-3 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)] block">
+                        SECONDARY / TACTILE PHOTOGRAPHY URL
+                      </label>
+                      <input
+                        type="url"
+                        value={secondaryImage}
+                        onChange={(e) => setSecondaryImage(e.target.value)}
+                        placeholder="https://..."
+                        className="w-full bg-[var(--bg-canvas)] border border-[var(--border-medium)] px-4 py-3 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Ensemble Pieces Builder */}
+                {/* Garment Pieces Section */}
                 <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-6">
                   <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4">
                     <div>
                       <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)] block">
-                        ENSEMBLE COMPONENTS
+                        ENSEMBLE PIECES ({pieces.length})
                       </span>
                       <h3 className="font-cormorant text-2xl text-[var(--text-primary)] uppercase tracking-wider">
-                        Garment Breakdown ({pieces.length} Pieces)
+                        Garment Breakdown
                       </h3>
                     </div>
                     <button
                       type="button"
                       onClick={handleAddPiece}
-                      className="px-3 py-2 bg-[var(--text-primary)] hover:bg-[var(--text-primary)]/80 text-[var(--bg-surface)] font-montserrat text-[10px] uppercase tracking-[0.2em] font-semibold flex items-center space-x-1.5 transition-colors"
+                      className="px-3 py-1.5 bg-[var(--bg-canvas)] hover:bg-[var(--border-medium)] border border-[var(--border-medium)] text-[var(--text-primary)] text-xs font-montserrat uppercase tracking-wider flex items-center space-x-1 transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>ADD PIECE</span>
+                      <span>Add Piece</span>
                     </button>
                   </div>
 
                   <div className="space-y-6">
                     {pieces.map((piece, idx) => (
                       <div
-                        key={idx}
-                        className="p-5 bg-[var(--bg-canvas)] border border-[var(--border-medium)] space-y-4 relative"
+                        key={piece.id}
+                        className="p-4 bg-[var(--bg-canvas)] border border-[var(--border-subtle)] space-y-4 relative"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-montserrat text-[10px] uppercase tracking-[0.2em] text-[var(--color-sand)] font-semibold">
+                          <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--color-sand)]">
                             PIECE 0{idx + 1}
                           </span>
                           {pieces.length > 1 && (
                             <button
                               type="button"
                               onClick={() => handleRemovePiece(idx)}
-                              className="text-[var(--color-rust)] hover:opacity-80 p-1 text-xs flex items-center space-x-1"
+                              className="text-[var(--text-muted)] hover:text-[var(--color-rust)] transition-colors p-1"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                              <span className="text-[9px] uppercase tracking-wider">Remove</span>
                             </button>
                           )}
                         </div>
@@ -548,7 +1034,7 @@ export default function CuratorStudioModal({
                               required
                               value={piece.name}
                               onChange={(e) => handleUpdatePiece(idx, 'name', e.target.value)}
-                              placeholder="e.g. Relaxed Raw Silk Lapel Shirt"
+                              placeholder="e.g. Raw Flax Kimono Jacket"
                               className="w-full bg-[var(--bg-surface)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
                             />
                           </div>
@@ -559,44 +1045,39 @@ export default function CuratorStudioModal({
                             </label>
                             <select
                               value={piece.category}
-                              onChange={(e) => handleUpdatePiece(idx, 'category', e.target.value as ItemCategory)}
+                              onChange={(e) => handleUpdatePiece(idx, 'category', e.target.value)}
                               className="w-full bg-[var(--bg-surface)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
                             >
-                              <option value="Jacket">Jacket / Outerwear</option>
-                              <option value="Shirt">Shirt / Top</option>
-                              <option value="Trousers">Trousers</option>
-                              <option value="Knitwear">Knitwear</option>
-                              <option value="Shoes">Shoes</option>
-                              <option value="Accessory">Accessory</option>
-                              <option value="Watch">Watch</option>
-                              <option value="Eyewear">Eyewear</option>
-                              <option value="Fragrance">Fragrance</option>
+                              {['Shirt', 'Trousers', 'Shoes', 'Watch', 'Fragrance', 'Accessory', 'Jacket', 'Knitwear', 'Eyewear'].map((cat) => (
+                                <option key={cat} value={cat}>
+                                  {cat}
+                                </option>
+                              ))}
                             </select>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <label className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)] block mb-1">
-                              PRICE (USD $) *
+                              PRICE (USD) *
                             </label>
                             <input
                               type="number"
                               required
-                              min="0"
-                              value={piece.price || ''}
+                              value={piece.price}
                               onChange={(e) => handleUpdatePiece(idx, 'price', Number(e.target.value))}
-                              placeholder="340"
                               className="w-full bg-[var(--bg-surface)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
                             />
                           </div>
 
-                          <div className="sm:col-span-2">
+                          <div>
                             <label className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)] block mb-1">
-                              FABRIC COMPOSITION & GSM
+                              NATURAL COMPOSITION *
                             </label>
                             <input
                               type="text"
+                              required
                               value={piece.composition}
                               onChange={(e) => handleUpdatePiece(idx, 'composition', e.target.value)}
                               placeholder="e.g. 380gsm Unbleached Italian Linen"

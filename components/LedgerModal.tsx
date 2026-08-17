@@ -73,17 +73,17 @@ export default function LedgerModal({
           initial={{ opacity: 0, scale: 0.98, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98, y: 10 }}
-          className="absolute inset-4 sm:inset-10 md:inset-16 bg-[#1A1611] border border-[#E8E0D5]/20 flex flex-col justify-between shadow-2xl overflow-hidden max-w-5xl mx-auto rounded-none"
+          className="absolute inset-4 sm:inset-10 md:inset-16 bg-[var(--bg-canvas)] border border-[var(--border-medium)] flex flex-col justify-between shadow-2xl overflow-hidden max-w-5xl mx-auto rounded-none text-[var(--text-primary)]"
         >
           {/* Header */}
-          <div className="p-6 sm:p-8 border-b border-[#E8E0D5]/10 flex items-center justify-between bg-[#1A1611]/95 z-10">
+          <div className="p-6 sm:p-8 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-surface)] z-10">
             <div>
-              <span className="font-montserrat text-[9px] uppercase tracking-[0.3em] text-[#C9B89A] block">
+              <span className="font-montserrat text-[9px] uppercase tracking-[0.3em] text-[var(--color-sand)] block font-medium">
                 METAMORPHOO PRIVATE CLIENT REGISTER
               </span>
-              <h2 className="font-cormorant font-light text-2xl sm:text-3xl text-[#E8E0D5] uppercase tracking-wider flex items-center space-x-2">
+              <h2 className="font-cormorant font-light text-2xl sm:text-3xl text-[var(--text-primary)] uppercase tracking-wider flex items-center space-x-2">
                 <span>YOUR PRIVATE LEDGER</span>
-                <span className="text-sm font-montserrat text-[#C4623A]">({totalSavedCount})</span>
+                <span className="text-sm font-montserrat text-[var(--color-rust)]">({totalSavedCount})</span>
               </h2>
             </div>
 
@@ -91,7 +91,7 @@ export default function LedgerModal({
               {totalSavedCount > 0 && (
                 <button
                   onClick={() => ledgerStore.clearLedger()}
-                  className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[#E8E0D5]/40 hover:text-[#C4623A] transition-colors"
+                  className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)] hover:text-[var(--color-rust)] transition-colors"
                 >
                   CLEAR REGISTER
                 </button>
@@ -99,7 +99,7 @@ export default function LedgerModal({
               <button
                 id="close-ledger-modal-btn"
                 onClick={onClose}
-                className="p-2 text-[#E8E0D5]/60 hover:text-[#E8E0D5] transition-colors focus:outline-none"
+                className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors focus:outline-none"
                 aria-label="Close Private Ledger"
               >
                 <X className="w-5 h-5" />
@@ -111,11 +111,11 @@ export default function LedgerModal({
           <div className="p-6 sm:p-8 flex-1 overflow-y-auto space-y-10">
             {totalSavedCount === 0 ? (
               <div className="py-24 text-center space-y-4">
-                <Bookmark className="w-10 h-10 mx-auto text-[#E8E0D5]/20 stroke-[1]" />
-                <h3 className="font-cormorant text-2xl text-[#E8E0D5] uppercase tracking-wider font-light">
+                <Bookmark className="w-10 h-10 mx-auto text-[var(--text-muted)] stroke-[1]" />
+                <h3 className="font-cormorant text-2xl text-[var(--text-primary)] uppercase tracking-wider font-light">
                   NO ENTRIES IN PRIVATE LEDGER
                 </h3>
-                <p className="font-montserrat text-xs text-[#E8E0D5]/60 max-w-sm mx-auto leading-relaxed">
+                <p className="font-montserrat text-xs text-[var(--text-secondary)] max-w-sm mx-auto leading-relaxed">
                   Record complete looks or individual curated pieces from the wardrobe scroll to build your personal seasonal wardrobe archive.
                 </p>
               </div>
@@ -124,8 +124,8 @@ export default function LedgerModal({
                 {/* Saved Ensembles */}
                 {savedLookObjects.length > 0 && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between pb-2 border-b border-[#E8E0D5]/15">
-                      <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] text-[#C9B89A]">
+                    <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
+                      <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] text-[var(--color-sand)] font-medium">
                         RECORDED ENSEMBLES ({savedLookObjects.length})
                       </span>
                     </div>
@@ -134,9 +134,9 @@ export default function LedgerModal({
                       {savedLookObjects.map((look) => (
                         <div
                           key={look.id}
-                          className="bg-[#14110E] border border-[#E8E0D5]/10 overflow-hidden group flex flex-col justify-between"
+                          className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] overflow-hidden group flex flex-col justify-between"
                         >
-                          <div className="relative aspect-[3/4] w-full overflow-hidden">
+                          <div className="relative aspect-[3/4] w-full overflow-hidden bg-[var(--bg-canvas)]">
                             <Image
                               src={look.heroImage}
                               alt={look.name}
@@ -144,20 +144,20 @@ export default function LedgerModal({
                               className="object-cover group-hover:scale-105 transition-transform duration-500"
                               referrerPolicy="no-referrer"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#1A1611] via-transparent to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-surface)] via-transparent to-transparent opacity-80" />
                             <div className="absolute top-2.5 left-2.5 flex items-center space-x-1.5">
-                              <span className="text-[8px] font-montserrat uppercase tracking-[0.2em] bg-[#1A1611]/80 px-2 py-0.5 text-[#C9B89A]">
+                              <span className="text-[8px] font-montserrat uppercase tracking-[0.2em] bg-[var(--bg-surface)]/90 px-2 py-0.5 text-[var(--color-sand)] font-medium border border-[var(--border-subtle)]">
                                 {look.tier}
                               </span>
                               {look.status === 'vaulted' && (
-                                <span className="text-[8px] font-montserrat uppercase tracking-[0.2em] bg-[#C4623A] px-2 py-0.5 text-[#E8E0D5]">
+                                <span className="text-[8px] font-montserrat uppercase tracking-[0.2em] bg-[var(--color-rust)] px-2 py-0.5 text-[#F5EFE4]">
                                   VAULTED
                                 </span>
                               )}
                             </div>
                             <button
                               onClick={() => ledgerStore.toggleSaveLook(look.id)}
-                              className="absolute top-2.5 right-2.5 p-1.5 bg-[#1A1611]/80 text-[#C4623A] hover:text-[#E8E0D5]"
+                              className="absolute top-2.5 right-2.5 p-1.5 bg-[var(--bg-surface)]/90 text-[var(--color-rust)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]"
                               title="Remove from Ledger"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -165,13 +165,13 @@ export default function LedgerModal({
                           </div>
 
                           <div className="p-4 space-y-2">
-                            <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[#E8E0D5]/50 block">
+                            <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)] block">
                               {look.subName || look.season}
                             </span>
-                            <h4 className="font-cormorant text-xl text-[#E8E0D5] uppercase tracking-wide">
+                            <h4 className="font-cormorant text-xl text-[var(--text-primary)] uppercase tracking-wide">
                               {look.name}
                             </h4>
-                            <p className="font-cormorant italic text-xs text-[#E8E0D5]/70 line-clamp-1">
+                            <p className="font-cormorant italic text-xs text-[var(--text-secondary)] line-clamp-1">
                               &ldquo;{look.statementQuote}&rdquo;
                             </p>
                             <button
@@ -179,7 +179,7 @@ export default function LedgerModal({
                                 onSelectLook(look);
                                 onClose();
                               }}
-                              className="w-full mt-3 py-2.5 border border-[#E8E0D5]/30 hover:border-[#E8E0D5] text-[#E8E0D5] text-[10px] font-montserrat uppercase tracking-[0.2em] transition-colors flex items-center justify-center space-x-2"
+                              className="w-full mt-3 py-2.5 border border-[var(--border-medium)] hover:border-[var(--text-primary)] text-[var(--text-primary)] text-[10px] font-montserrat uppercase tracking-[0.2em] transition-colors flex items-center justify-center space-x-2"
                             >
                               <span>ENTER LOOK</span>
                               <ArrowRight className="w-3 h-3" />
@@ -194,8 +194,8 @@ export default function LedgerModal({
                 {/* Saved Individual Pieces */}
                 {savedItemObjects.length > 0 && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between pb-2 border-b border-[#E8E0D5]/15">
-                      <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] text-[#C9B89A]">
+                    <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
+                      <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] text-[var(--color-sand)] font-medium">
                         INDIVIDUAL RECORDED PIECES ({savedItemObjects.length})
                       </span>
                     </div>
@@ -204,10 +204,10 @@ export default function LedgerModal({
                       {savedItemObjects.map(({ item, look }) => (
                         <div
                           key={item.id}
-                          className="bg-[#14110E] border border-[#E8E0D5]/10 p-3.5 flex items-start justify-between group"
+                          className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-3.5 flex items-start justify-between group"
                         >
                           <div className="flex items-center space-x-3">
-                            <div className="relative w-14 h-18 bg-[#1A1611] flex-shrink-0 overflow-hidden">
+                            <div className="relative w-14 h-18 bg-[var(--bg-canvas)] flex-shrink-0 overflow-hidden border border-[var(--border-subtle)]">
                               <Image
                                 src={item.image}
                                 alt={item.name}
@@ -217,13 +217,13 @@ export default function LedgerModal({
                               />
                             </div>
                             <div className="space-y-1">
-                              <span className="font-montserrat text-[8px] uppercase tracking-[0.2em] text-[#C9B89A]">
+                              <span className="font-montserrat text-[8px] uppercase tracking-[0.2em] text-[var(--color-sand)] font-medium">
                                 {item.category} · FROM {look.name}
                               </span>
-                              <h4 className="font-cormorant text-base text-[#E8E0D5] uppercase tracking-wide leading-tight">
+                              <h4 className="font-cormorant text-base text-[var(--text-primary)] uppercase tracking-wide leading-tight">
                                 {item.name}
                               </h4>
-                              <div className="font-montserrat text-xs text-[#E8E0D5]">
+                              <div className="font-montserrat text-xs text-[var(--text-primary)] font-medium">
                                 {currentCurrencyConfig.format(item.price)}
                               </div>
                               <button
@@ -231,7 +231,7 @@ export default function LedgerModal({
                                   onSelectItem(item, look);
                                   onClose();
                                 }}
-                                className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[#C9B89A] hover:text-[#E8E0D5] underline pt-1 block"
+                                className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--color-sand)] hover:text-[var(--text-primary)] underline pt-1 block"
                               >
                                 INSPECT PIECE →
                               </button>
@@ -240,7 +240,7 @@ export default function LedgerModal({
 
                           <button
                             onClick={() => ledgerStore.toggleSaveItem(item.id, look.id, look.name)}
-                            className="p-1 text-[#E8E0D5]/40 hover:text-[#C4623A]"
+                            className="p-1 text-[var(--text-muted)] hover:text-[var(--color-rust)]"
                             title="Remove from Ledger"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -255,8 +255,8 @@ export default function LedgerModal({
           </div>
 
           {/* Footer Note */}
-          <div className="p-4 sm:p-6 border-t border-[#E8E0D5]/10 bg-[#14110E] text-center">
-            <p className="font-montserrat text-[10px] text-[#E8E0D5]/50 tracking-wider">
+          <div className="p-4 sm:p-6 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] text-center">
+            <p className="font-montserrat text-[10px] text-[var(--text-muted)] tracking-wider">
               Private Ledger state persists across your sessions. Curated to Metamorphoo Standard.
             </p>
           </div>

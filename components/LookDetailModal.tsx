@@ -74,15 +74,15 @@ export default function LookDetailModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1611]/95 backdrop-blur-xl">
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-[var(--bg-canvas)]/95 backdrop-blur-xl text-[var(--text-primary)]">
         {/* Top Floating Control Bar */}
-        <div className="sticky top-0 left-0 right-0 z-30 flex items-center justify-between px-6 sm:px-12 py-5 bg-gradient-to-b from-[#1A1611] to-transparent">
+        <div className="sticky top-0 left-0 right-0 z-30 flex items-center justify-between px-6 sm:px-12 py-5 bg-[var(--bg-surface)]/90 border-b border-[var(--border-subtle)]">
           <div className="flex items-center space-x-3">
-            <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] text-[#C9B89A]">
+            <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] text-[var(--color-sand)] font-medium">
               {look.season}
             </span>
-            <span className="text-[#E8E0D5]/30">/</span>
-            <span className="font-montserrat text-[10px] uppercase tracking-[0.2em] text-[#E8E0D5]">
+            <span className="text-[var(--text-muted)]">/</span>
+            <span className="font-montserrat text-[10px] uppercase tracking-[0.2em] text-[var(--text-primary)]">
               {look.name}
             </span>
           </div>
@@ -92,7 +92,7 @@ export default function LookDetailModal({
             <button
               id="share-look-link-btn"
               onClick={handleShareLook}
-              className="flex items-center space-x-1.5 px-3 py-1.5 border border-[#E8E0D5]/20 text-[#E8E0D5]/70 hover:border-[#E8E0D5]/60 hover:text-[#E8E0D5] transition-all text-[10px] uppercase tracking-[0.2em] font-montserrat"
+              className="flex items-center space-x-1.5 px-3 py-1.5 border border-[var(--border-medium)] text-[var(--text-secondary)] hover:border-[var(--text-primary)] hover:text-[var(--text-primary)] transition-all text-[10px] uppercase tracking-[0.2em] font-montserrat"
               title="Copy editorial deep-link"
             >
               <Share2 className="w-3.5 h-3.5" />
@@ -105,13 +105,13 @@ export default function LookDetailModal({
               onClick={handleToggleSaveLook}
               className={`flex items-center space-x-1.5 px-3 py-1.5 border transition-all text-[10px] uppercase tracking-[0.2em] font-montserrat ${
                 isSaved
-                  ? 'border-[#C4623A] bg-[#C4623A]/10 text-[#F5EFE4]'
-                  : 'border-[#E8E0D5]/20 text-[#E8E0D5]/70 hover:border-[#E8E0D5]/60'
+                  ? 'border-[var(--color-rust)] bg-[var(--color-rust)]/10 text-[var(--text-primary)]'
+                  : 'border-[var(--border-medium)] text-[var(--text-secondary)] hover:border-[var(--text-primary)]'
               }`}
             >
               {isSaved ? (
                 <>
-                  <BookmarkCheck className="w-3.5 h-3.5 text-[#C4623A]" />
+                  <BookmarkCheck className="w-3.5 h-3.5 text-[var(--color-rust)]" />
                   <span className="hidden sm:inline-block">SAVED TO LEDGER</span>
                 </>
               ) : (
@@ -125,7 +125,7 @@ export default function LookDetailModal({
             <button
               id="close-look-detail-btn"
               onClick={onClose}
-              className="group flex items-center space-x-2 text-[#E8E0D5]/70 hover:text-[#E8E0D5] p-2 focus:outline-none transition-colors"
+              className="group flex items-center space-x-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-2 focus:outline-none transition-colors"
             >
               <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] hidden sm:inline-block">
                 CLOSE
@@ -136,12 +136,12 @@ export default function LookDetailModal({
         </div>
 
         {/* Modal Content Body */}
-        <div className="max-w-7xl mx-auto px-6 sm:px-12 pb-24 pt-4">
+        <div className="max-w-7xl mx-auto px-6 sm:px-12 pb-24 pt-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
             {/* Left: Multi-Image Editorial Gallery with Interactive Pins */}
             <div className="lg:col-span-7 space-y-6">
               {/* Main Display Stage */}
-              <div className="relative aspect-[3/4] w-full bg-[#14110E] overflow-hidden">
+              <div className="relative aspect-[3/4] w-full bg-[var(--bg-surface)] overflow-hidden border border-[var(--border-subtle)]">
                 <Image
                   src={images[activeImageIndex]?.url || look.heroImage}
                   alt={look.name}
@@ -150,21 +150,21 @@ export default function LookDetailModal({
                   className="object-cover object-center transition-all duration-700"
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1A1611]/60 via-transparent to-[#1A1611]/20 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-canvas)]/40 via-transparent to-[var(--bg-canvas)]/10 pointer-events-none" />
 
                 {/* EDIT or VAULTED mark */}
                 <div className="absolute top-4 left-4 z-10 flex items-center space-x-2">
-                  <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C9B89A] bg-[#1A1611]/80 px-2.5 py-1 backdrop-blur-sm">
+                  <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)] bg-[var(--bg-surface)]/90 px-2.5 py-1 backdrop-blur-sm border border-[var(--border-subtle)] font-medium">
                     {look.tier}
                   </span>
                   {isVaulted && (
-                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5] bg-[#C4623A]/90 px-2.5 py-1 flex items-center space-x-1">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#F5EFE4] bg-[var(--color-rust)] px-2.5 py-1 flex items-center space-x-1">
                       <Archive className="w-3 h-3" />
                       <span>VAULTED EDITION</span>
                     </span>
                   )}
                   {look.status === 'low_stock' && (
-                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C4623A] bg-[#1A1611]/90 px-2 py-0.5 border border-[#C4623A]/30">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-rust)] bg-[var(--bg-surface)]/90 px-2 py-0.5 border border-[var(--color-rust)]/40">
                       FINAL ALLOCATIONS
                     </span>
                   )}
@@ -193,24 +193,24 @@ export default function LookDetailModal({
                             className="group relative flex items-center justify-center p-2 focus:outline-none"
                           >
                             <span className="relative flex h-4 w-4">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E8E0D5] opacity-40"></span>
-                              <span className="relative inline-flex rounded-full h-4 w-4 bg-[#1A1611] border border-[#E8E0D5] group-hover:bg-[#C4623A] group-hover:border-[#C4623A] transition-colors items-center justify-center">
-                                <span className="w-1.5 h-1.5 bg-[#E8E0D5] rounded-full group-hover:bg-[#F5EFE4]" />
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-sand)] opacity-40"></span>
+                              <span className="relative inline-flex rounded-full h-4 w-4 bg-[var(--bg-surface)] border border-[var(--text-primary)] group-hover:bg-[var(--color-rust)] group-hover:border-[var(--color-rust)] transition-colors items-center justify-center">
+                                <span className="w-1.5 h-1.5 bg-[var(--text-primary)] rounded-full group-hover:bg-[#F5EFE4]" />
                               </span>
                             </span>
 
                             {/* Floating Pin Label Tooltip */}
                             <div
-                              className={`absolute left-6 top-1/2 -translate-y-1/2 whitespace-nowrap bg-[#1A1611]/95 backdrop-blur-md border border-[#E8E0D5]/20 px-3 py-1.5 pointer-events-none transition-all duration-200 z-30 ${
+                              className={`absolute left-6 top-1/2 -translate-y-1/2 whitespace-nowrap bg-[var(--bg-surface)]/95 backdrop-blur-md border border-[var(--border-medium)] px-3 py-1.5 pointer-events-none transition-all duration-200 z-30 ${
                                 isHovered
                                   ? 'opacity-100 translate-x-0'
                                   : 'opacity-0 -translate-x-2'
                               }`}
                             >
-                              <span className="font-montserrat text-[8px] uppercase tracking-[0.25em] text-[#C9B89A] block">
+                              <span className="font-montserrat text-[8px] uppercase tracking-[0.25em] text-[var(--color-sand)] block font-medium">
                                 {item.category}
                               </span>
-                              <span className="font-cormorant text-xs text-[#E8E0D5] tracking-wider uppercase">
+                              <span className="font-cormorant text-xs text-[var(--text-primary)] tracking-wider uppercase">
                                 {item.name}
                               </span>
                             </div>
@@ -222,13 +222,13 @@ export default function LookDetailModal({
                 )}
               </div>
 
-              {/* Multi-Angle Gallery Thumbnails (3-5 required images) */}
+              {/* Multi-Angle Gallery Thumbnails */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/50">
+                  <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--text-muted)]">
                     EDITORIAL ANGLES & TEXTURES ({images.length} FRAMES)
                   </span>
-                  <span className="font-montserrat text-[9px] text-[#C9B89A]">
+                  <span className="font-montserrat text-[9px] text-[var(--color-sand)] font-medium">
                     {images[activeImageIndex]?.caption}
                   </span>
                 </div>
@@ -241,7 +241,7 @@ export default function LookDetailModal({
                       onClick={() => setActiveImageIndex(idx)}
                       className={`relative aspect-[3/4] overflow-hidden transition-all duration-300 border ${
                         activeImageIndex === idx
-                          ? 'border-[#E8E0D5] opacity-100 ring-1 ring-[#E8E0D5]'
+                          ? 'border-[var(--text-primary)] opacity-100 ring-1 ring-[var(--text-primary)]'
                           : 'border-transparent opacity-60 hover:opacity-100'
                       }`}
                     >
@@ -252,7 +252,7 @@ export default function LookDetailModal({
                         className="object-cover object-center"
                         referrerPolicy="no-referrer"
                       />
-                      <div className="absolute inset-0 bg-[#1A1611]/20" />
+                      <div className="absolute inset-0 bg-[var(--bg-canvas)]/20" />
                     </button>
                   ))}
                 </div>
@@ -264,34 +264,34 @@ export default function LookDetailModal({
               {/* Season & Look Designation */}
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <span className="font-montserrat text-[10px] uppercase tracking-[0.28em] text-[#C9B89A]">
+                  <span className="font-montserrat text-[10px] uppercase tracking-[0.28em] text-[var(--color-sand)] font-medium">
                     {look.subName || look.tier}
                   </span>
-                  <span className="text-[#E8E0D5]/30">·</span>
-                  <span className="font-montserrat text-[10px] text-[#E8E0D5]/60 uppercase tracking-[0.2em]">
+                  <span className="text-[var(--text-muted)]">·</span>
+                  <span className="font-montserrat text-[10px] text-[var(--text-secondary)] uppercase tracking-[0.2em]">
                     {look.occasion.split(',')[0]}
                   </span>
                 </div>
 
-                <h1 className="font-cormorant font-light text-4xl sm:text-5xl text-[#E8E0D5] tracking-[0.16em] uppercase leading-none">
+                <h1 className="font-cormorant font-light text-4xl sm:text-5xl text-[var(--text-primary)] tracking-[0.16em] uppercase leading-none">
                   {look.name}
                 </h1>
               </div>
 
               {/* Statement Quote & Long Thesis */}
-              <div className="space-y-4 border-l border-[#E8E0D5]/20 pl-5">
-                <p className="font-cormorant italic text-xl sm:text-2xl text-[#E8E0D5]/90 font-light leading-relaxed">
+              <div className="space-y-4 border-l border-[var(--border-medium)] pl-5">
+                <p className="font-cormorant italic text-xl sm:text-2xl text-[var(--text-primary)] font-light leading-relaxed">
                   &ldquo;{look.statementQuote}&rdquo;
                 </p>
-                <p className="font-montserrat text-xs text-[#E8E0D5]/70 font-light leading-relaxed">
+                <p className="font-montserrat text-xs text-[var(--text-secondary)] font-light leading-relaxed">
                   {look.longThesis}
                 </p>
               </div>
 
               {/* Allocation & Availability Notice */}
               {look.allocationNotes && (
-                <div className="p-3.5 bg-[#14110E] border border-[#E8E0D5]/15 text-[10px] font-montserrat tracking-wider text-[#E8E0D5]/80">
-                  <span className="text-[#C9B89A] uppercase tracking-[0.2em] block mb-1">
+                <div className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[10px] font-montserrat tracking-wider text-[var(--text-secondary)]">
+                  <span className="text-[var(--color-sand)] uppercase tracking-[0.2em] block mb-1 font-medium">
                     ALLOCATION REGISTRY
                   </span>
                   {look.allocationNotes}
@@ -299,22 +299,22 @@ export default function LookDetailModal({
               )}
 
               {/* The One Rule Broken (Signature Metamorphoo Principle) */}
-              <div className="bg-[#14110E] p-5 border border-[#E8E0D5]/15 space-y-2">
-                <span className="font-montserrat text-[9px] uppercase tracking-[0.28em] text-[#C4623A] font-medium block">
+              <div className="bg-[var(--bg-surface)] p-5 border border-[var(--border-subtle)] space-y-2">
+                <span className="font-montserrat text-[9px] uppercase tracking-[0.28em] text-[var(--color-rust)] font-medium block">
                   THE RULE BROKEN
                 </span>
-                <p className="font-montserrat text-xs text-[#E8E0D5]/90 font-light leading-relaxed">
+                <p className="font-montserrat text-xs text-[var(--text-primary)] font-light leading-relaxed">
                   {look.oneRuleBroken}
                 </p>
               </div>
 
               {/* Wardrobe Ensemble Items Breakdown */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-[#E8E0D5]/15">
-                  <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] text-[#E8E0D5]/70">
+                <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
+                  <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] text-[var(--text-secondary)] font-medium">
                     ENSEMBLE PIECES ({look.items.length})
                   </span>
-                  <span className="font-montserrat text-[10px] uppercase tracking-[0.2em] text-[#C9B89A]">
+                  <span className="font-montserrat text-[10px] uppercase tracking-[0.2em] text-[var(--color-sand)] font-medium">
                     TAP PIECE TO INSPECT
                   </span>
                 </div>
@@ -329,12 +329,12 @@ export default function LookDetailModal({
                       onMouseLeave={() => setHoveredItemId(null)}
                       className={`w-full text-left p-3.5 transition-all duration-300 flex items-center justify-between border ${
                         hoveredItemId === item.id
-                          ? 'border-[#E8E0D5] bg-[#14110E]'
-                          : 'border-[#E8E0D5]/10 bg-[#1A1611] hover:border-[#E8E0D5]/30'
+                          ? 'border-[var(--text-primary)] bg-[var(--bg-elevated)]'
+                          : 'border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-[var(--border-medium)]'
                       }`}
                     >
                       <div className="flex items-center space-x-3.5">
-                        <div className="relative w-11 h-14 bg-[#14110E] flex-shrink-0 overflow-hidden">
+                        <div className="relative w-11 h-14 bg-[var(--bg-canvas)] flex-shrink-0 overflow-hidden border border-[var(--border-subtle)]">
                           <Image
                             src={item.image}
                             alt={item.name}
@@ -344,20 +344,20 @@ export default function LookDetailModal({
                           />
                         </div>
                         <div>
-                          <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[#C9B89A] block">
+                          <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--color-sand)] block font-medium">
                             {item.category} · {item.origin.split('/')[0]}
                           </span>
-                          <span className="font-cormorant text-base text-[#E8E0D5] uppercase tracking-wide">
+                          <span className="font-cormorant text-base text-[var(--text-primary)] uppercase tracking-wide">
                             {item.name}
                           </span>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-3">
-                        <span className="font-montserrat text-xs text-[#E8E0D5] tracking-wider">
+                        <span className="font-montserrat text-xs text-[var(--text-primary)] tracking-wider font-medium">
                           {currentCurrencyConfig.format(item.price)}
                         </span>
-                        <ChevronRight className="w-4 h-4 text-[#E8E0D5]/40" />
+                        <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
                       </div>
                     </button>
                   ))}
@@ -365,27 +365,27 @@ export default function LookDetailModal({
               </div>
 
               {/* Total Ensemble & Shop Full Look CTA */}
-              <div className="pt-4 space-y-4 border-t border-[#E8E0D5]/15">
+              <div className="pt-4 space-y-4 border-t border-[var(--border-subtle)]">
                 <div className="flex justify-between items-baseline">
                   <div>
-                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/50 block">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--text-muted)] block">
                       TOTAL ENSEMBLE PRICE ({look.items.length} PIECES)
                     </span>
-                    <span className="font-montserrat text-xl text-[#E8E0D5] tracking-widest font-light">
+                    <span className="font-montserrat text-xl text-[var(--text-primary)] tracking-widest font-light">
                       {formattedTotalPrice}
                     </span>
                   </div>
-                  <span className="font-montserrat text-[9px] text-[#C9B89A] uppercase tracking-[0.2em]">
+                  <span className="font-montserrat text-[9px] text-[var(--color-sand)] uppercase tracking-[0.2em] font-medium">
                     ALL-INCLUSIVE CURATION
                   </span>
                 </div>
 
                 {isVaulted ? (
-                  <div className="p-4 bg-[#14110E] border border-[#C4623A]/40 text-center space-y-2">
-                    <span className="font-montserrat text-[9px] uppercase tracking-[0.28em] text-[#C4623A] font-medium block">
+                  <div className="p-4 bg-[var(--bg-surface)] border border-[var(--color-rust)]/40 text-center space-y-2">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.28em] text-[var(--color-rust)] font-medium block">
                       ARCHIVAL VAULT RECORD
                     </span>
-                    <p className="font-montserrat text-xs text-[#E8E0D5]/80 font-light">
+                    <p className="font-montserrat text-xs text-[var(--text-secondary)] font-light">
                       This complete look has completed its official season. Inquiries for private recreation are directed to the Atelier.
                     </p>
                   </div>
@@ -393,7 +393,7 @@ export default function LookDetailModal({
                   <button
                     id="shop-full-look-btn"
                     onClick={handleAddFullLook}
-                    className="w-full group py-5 px-6 border border-[#E8E0D5] hover:border-[#C4623A] bg-[#1A1611] hover:bg-[#C4623A] text-[#E8E0D5] hover:text-[#F5EFE4] transition-all duration-300 flex items-center justify-center space-x-3 focus:outline-none"
+                    className="w-full group py-5 px-6 border border-[var(--text-primary)] hover:border-[var(--color-rust)] bg-[var(--bg-surface)] hover:bg-[var(--color-rust)] text-[var(--text-primary)] hover:text-[#F5EFE4] transition-all duration-300 flex items-center justify-center space-x-3 focus:outline-none"
                   >
                     {fullLookAdded ? (
                       <>

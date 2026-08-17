@@ -50,44 +50,44 @@ export default function EditDirectoryView({
       {/* Header Context */}
       <div className="max-w-3xl space-y-6">
         <div className="flex items-center space-x-2">
-          <span className="font-montserrat text-[10px] uppercase tracking-[0.28em] text-[#C9B89A]">
+          <span className="font-montserrat text-[10px] uppercase tracking-[0.28em] text-[var(--color-sand)] font-medium">
             METAMORPHOO CURATORIAL STANDARD
           </span>
         </div>
 
-        <h1 className="font-cormorant font-light text-4xl sm:text-6xl text-[#E8E0D5] uppercase tracking-[0.14em] leading-tight">
+        <h1 className="font-cormorant font-light text-4xl sm:text-6xl text-[var(--text-primary)] uppercase tracking-[0.14em] leading-tight">
           THE EDIT DIRECTORY
         </h1>
 
-        <p className="font-montserrat text-xs sm:text-sm text-[#E8E0D5]/70 font-light leading-relaxed">
+        <p className="font-montserrat text-xs sm:text-sm text-[var(--text-secondary)] font-light leading-relaxed">
           Curated external pieces, filtered by the METAMORPHOO standard. Each garment is sourced from independent heritage mills across Porto, Biella, Kojima, and Lagos. Never assembled into random outfits — every piece belongs to a resolved ensemble.
         </p>
 
         {/* 5 Curation Standard Pillars */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 text-xs font-montserrat">
-          <div className="p-4 bg-[#14110E] border border-[#E8E0D5]/10 space-y-1.5">
-            <span className="text-[#C9B89A] uppercase tracking-[0.2em] text-[9px] block">
+          <div className="p-4 bg-[var(--bg-canvas)] border border-[var(--border-subtle)] space-y-1.5">
+            <span className="text-[var(--color-sand)] uppercase tracking-[0.2em] text-[9px] block font-medium">
               PILLAR 01 · NATURAL FIBRES
             </span>
-            <p className="text-[#E8E0D5]/80 font-light">
+            <p className="text-[var(--text-secondary)] font-light">
               Muga silk, raw flax linen, tropical virgin wool. Zero polyester tension.
             </p>
           </div>
 
-          <div className="p-4 bg-[#14110E] border border-[#E8E0D5]/10 space-y-1.5">
-            <span className="text-[#C9B89A] uppercase tracking-[0.2em] text-[9px] block">
+          <div className="p-4 bg-[var(--bg-canvas)] border border-[var(--border-subtle)] space-y-1.5">
+            <span className="text-[var(--color-sand)] uppercase tracking-[0.2em] text-[9px] block font-medium">
               PILLAR 02 · UNBRANDED QUIET
             </span>
-            <p className="text-[#E8E0D5]/80 font-light">
+            <p className="text-[var(--text-secondary)] font-light">
               No exterior logos, monograms, or overt branding. Form speaks first.
             </p>
           </div>
 
-          <div className="p-4 bg-[#14110E] border border-[#E8E0D5]/10 space-y-1.5">
-            <span className="text-[#C9B89A] uppercase tracking-[0.2em] text-[9px] block">
+          <div className="p-4 bg-[var(--bg-canvas)] border border-[var(--border-subtle)] space-y-1.5">
+            <span className="text-[var(--color-sand)] uppercase tracking-[0.2em] text-[9px] block font-medium">
               PILLAR 03 · PROVENANCE
             </span>
-            <p className="text-[#E8E0D5]/80 font-light">
+            <p className="text-[var(--text-secondary)] font-light">
               Explicit origin transparency: every piece lists mill, city, and composition.
             </p>
           </div>
@@ -96,7 +96,7 @@ export default function EditDirectoryView({
 
       {/* Category Filter Chips */}
       <div className="space-y-8">
-        <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none border-b border-[#E8E0D5]/10">
+        <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none border-b border-[var(--border-subtle)]">
           {categories.map((cat) => (
             <button
               key={cat}
@@ -104,8 +104,8 @@ export default function EditDirectoryView({
               onClick={() => setSelectedCategory(cat)}
               className={`px-4 py-2 font-montserrat text-[10px] uppercase tracking-[0.22em] whitespace-nowrap transition-all duration-200 border ${
                 selectedCategory === cat
-                  ? 'border-[#E8E0D5] bg-[#E8E0D5] text-[#1A1611] font-medium'
-                  : 'border-transparent text-[#E8E0D5]/60 hover:text-[#E8E0D5]'
+                  ? 'border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--bg-surface)] font-medium'
+                  : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               {cat}
@@ -120,10 +120,10 @@ export default function EditDirectoryView({
               key={item.id}
               id={`edit-item-card-${item.id}`}
               onClick={() => onSelectItem(item, look)}
-              className="group cursor-pointer bg-[#14110E] border border-[#E8E0D5]/10 hover:border-[#E8E0D5]/30 transition-all duration-500 flex flex-col"
+              className="group cursor-pointer bg-[var(--bg-canvas)] border border-[var(--border-subtle)] hover:border-[var(--border-medium)] transition-all duration-500 flex flex-col"
             >
               {/* Product Editorial Image with EDIT label */}
-              <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#1A1611]">
+              <div className="relative aspect-[3/4] w-full overflow-hidden bg-[var(--bg-surface)]">
                 <Image
                   src={item.image}
                   alt={item.name}
@@ -134,7 +134,7 @@ export default function EditDirectoryView({
 
                 {/* EDIT Label (Montserrat Regular 9-10px, Mediterranean Sand, Top-Left) */}
                 <div className="absolute top-3 left-3 z-10">
-                  <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C9B89A] bg-[#1A1611]/80 px-2 py-0.5">
+                  <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)] bg-[var(--bg-surface)]/80 px-2 py-0.5 border border-[var(--border-subtle)] font-medium">
                     EDIT
                   </span>
                 </div>
@@ -146,7 +146,7 @@ export default function EditDirectoryView({
                       e.stopPropagation();
                       onSelectLook(look);
                     }}
-                    className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[#E8E0D5] bg-[#1A1611]/90 px-2 py-1 hover:text-[#C4623A] transition-colors"
+                    className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--text-primary)] bg-[var(--bg-surface)]/90 px-2 py-1 hover:text-[var(--color-rust)] transition-colors border border-[var(--border-subtle)]"
                   >
                     FROM {look.name} →
                   </button>
@@ -156,29 +156,29 @@ export default function EditDirectoryView({
               {/* Garment Details */}
               <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center text-[#E8E0D5]/50">
-                    <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[#C9B89A]">
+                  <div className="flex justify-between items-center text-[var(--text-muted)]">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--color-sand)] font-medium">
                       {item.category}
                     </span>
-                    <span className="font-montserrat text-[9px] uppercase tracking-[0.15em]">
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.15em] text-[var(--text-secondary)]">
                       {item.origin}
                     </span>
                   </div>
 
-                  <h3 className="font-cormorant font-light text-xl text-[#E8E0D5] group-hover:text-[#F5EFE4] transition-colors leading-snug">
+                  <h3 className="font-cormorant font-light text-xl text-[var(--text-primary)] group-hover:text-[var(--color-rust)] transition-colors leading-snug">
                     {item.name}
                   </h3>
 
-                  <p className="font-montserrat text-[11px] text-[#E8E0D5]/60 line-clamp-2 font-light">
+                  <p className="font-montserrat text-[11px] text-[var(--text-secondary)] line-clamp-2 font-light">
                     {item.composition}
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-[#E8E0D5]/10 flex justify-between items-baseline">
-                  <span className="font-montserrat text-xs text-[#E8E0D5] tracking-wider font-medium">
+                <div className="pt-3 border-t border-[var(--border-subtle)] flex justify-between items-baseline">
+                  <span className="font-montserrat text-xs text-[var(--text-primary)] tracking-wider font-medium">
                     {currentCurrencyConfig.format(item.price)}
                   </span>
-                  <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/40 group-hover:text-[#C4623A] transition-colors">
+                  <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--text-muted)] group-hover:text-[var(--color-rust)] transition-colors font-medium">
                     INSPECT PIECE →
                   </span>
                 </div>

@@ -17,7 +17,8 @@ import ConciergeChatWidget from '../components/ConciergeChatWidget';
 import { Look, Item, CartItem } from '../lib/types';
 import { useCart } from '../lib/cart-store';
 import { useCatalog } from '../lib/catalog-store';
-import { themeStore } from '../lib/theme';
+import { useTheme, themeStore } from '../lib/theme';
+import { Sun, Moon } from 'lucide-react';
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'wardrobe' | 'archive' | 'edit' | 'originals' | 'house'>('wardrobe');
@@ -29,6 +30,7 @@ export default function HomePage() {
   const [isCuratorStudioOpen, setIsCuratorStudioOpen] = useState(false);
   const [cartItems, setCartItems] = useCart();
   const catalog = useCatalog();
+  const theme = useTheme();
 
   // Initialize client theme from localStorage on initial render
   useEffect(() => {
@@ -233,8 +235,50 @@ export default function HomePage() {
       <ConciergeChatWidget />
 
       {/* Global Architectural Editorial Footer */}
-      <footer id="global-footer" className="border-t border-[var(--border-subtle)] bg-[var(--bg-canvas)] pt-20 sm:pt-28 pb-12 px-6 sm:px-12 lg:px-16 text-[var(--text-muted)] transition-colors duration-300">
-        <div className="max-w-7xl mx-auto space-y-16 sm:space-y-24">
+      <footer id="global-footer" className="border-t border-[var(--border-subtle)] bg-[var(--bg-canvas)] pt-16 sm:pt-24 pb-12 px-6 sm:px-12 lg:px-16 text-[var(--text-muted)] transition-colors duration-300">
+        <div className="max-w-7xl mx-auto space-y-16 sm:space-y-20">
+          {/* SARTORIAL CHROMATIC PALETTE (Bone vs Obsidian in Footer) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+            <div className="space-y-1">
+              <span className="font-montserrat text-[9px] uppercase tracking-[0.28em] text-[var(--color-sand)] font-semibold block">
+                SARTORIAL CHROMATIC PALETTE
+              </span>
+              <p className="font-montserrat text-xs text-[var(--text-secondary)] font-light">
+                {theme === 'obsidian'
+                  ? 'Active: Smoked Obsidian (Nocturnal Salon & Architectural Weight)'
+                  : 'Active: Bone Linen (Midday Light & Raw Flax Luminescence)'}
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-3 shrink-0">
+              <button
+                id="footer-palette-bone-btn"
+                onClick={() => themeStore.setTheme('bone')}
+                className={`px-4 py-2 text-[10px] font-montserrat uppercase tracking-[0.22em] flex items-center space-x-2 border transition-all ${
+                  theme === 'bone'
+                    ? 'bg-[var(--bg-canvas)] text-[var(--color-rust)] border-[var(--color-rust)] font-medium shadow-sm'
+                    : 'text-[var(--text-muted)] border-[var(--border-subtle)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)]'
+                }`}
+              >
+                <Sun className="w-3.5 h-3.5" />
+                <span>BONE LINEN</span>
+              </button>
+
+              <button
+                id="footer-palette-obsidian-btn"
+                onClick={() => themeStore.setTheme('obsidian')}
+                className={`px-4 py-2 text-[10px] font-montserrat uppercase tracking-[0.22em] flex items-center space-x-2 border transition-all ${
+                  theme === 'obsidian'
+                    ? 'bg-[var(--bg-canvas)] text-[var(--color-sand)] border-[var(--color-sand)] font-medium shadow-sm'
+                    : 'text-[var(--text-muted)] border-[var(--border-subtle)] hover:text-[var(--text-primary)] hover:border-[var(--border-medium)]'
+                }`}
+              >
+                <Moon className="w-3.5 h-3.5" />
+                <span>SMOKED OBSIDIAN</span>
+              </button>
+            </div>
+          </div>
+
           {/* 4 Architectural Columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-12 text-left">
             {/* Column 1: The House */}
@@ -330,14 +374,6 @@ export default function HomePage() {
                 </li>
                 <li>
                   <button
-                    onClick={() => setIsCuratorStudioOpen(true)}
-                    className="text-[var(--color-sand)] hover:text-[var(--color-rust)] hover:translate-x-1 transition-all duration-200 font-medium"
-                  >
-                    + Upload Capsule (Studio)
-                  </button>
-                </li>
-                <li>
-                  <button
                     onClick={() => setIsManifestoOpen(true)}
                     className="hover:text-[var(--color-rust)] hover:translate-x-1 transition-all duration-200"
                   >
@@ -381,8 +417,8 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Monumental Architectural Brand Display */}
-          <div className="pt-10 sm:pt-16 border-t border-[var(--border-subtle)] text-center overflow-hidden">
+          {/* Monumental Architectural Brand Display (Bigger & Grand) */}
+          <div className="pt-12 sm:pt-20 border-t border-[var(--border-subtle)] text-center overflow-hidden">
             <button
               onClick={() => {
                 setActiveTab('wardrobe');
@@ -391,19 +427,29 @@ export default function HomePage() {
               className="w-full text-center focus:outline-none group block py-4"
               title="Return to The Wardrobe"
             >
-              <h1 className="font-cormorant font-light text-5xl sm:text-7xl md:text-8xl lg:text-[115px] xl:text-[145px] tracking-[0.2em] sm:tracking-[0.25em] text-[var(--text-primary)] group-hover:text-[var(--color-sand)] transition-colors duration-500 uppercase leading-none select-none">
+              <h1 className="font-cormorant font-light text-6xl sm:text-8xl md:text-9xl lg:text-[135px] xl:text-[165px] tracking-[0.22em] sm:tracking-[0.26em] text-[var(--text-primary)] group-hover:text-[var(--color-sand)] transition-colors duration-500 uppercase leading-none select-none">
                 METAMORPHOO
               </h1>
             </button>
-            <p className="font-montserrat text-[10px] sm:text-[11px] tracking-[0.35em] text-[var(--text-muted)] uppercase mt-4">
+            <p className="font-montserrat text-[10px] sm:text-[11px] tracking-[0.38em] text-[var(--text-muted)] uppercase mt-5">
               A CURATED WORLD OF COMPLETE DECISIONS · DIRECTED BY ANI CHISOM
             </p>
           </div>
 
-          {/* Bottom Bar with Copyright and Back to Top */}
+          {/* Bottom Bar with Copyright, Discreet Atelier Desk (Notion Sync), and Back to Top */}
           <div className="pt-8 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] font-montserrat uppercase tracking-[0.2em] text-[var(--text-muted)]">
-            <div>
-              © {new Date().getFullYear()} METAMORPHOO BUREAU. ALL RIGHTS RESERVED.
+            <div className="flex items-center space-x-3">
+              <span>© {new Date().getFullYear()} METAMORPHOO BUREAU.</span>
+              {/* Discrete Atelier Desk / Notion Sync Trigger - Unobtrusive & Eyes will not see it casually */}
+              <button
+                id="footer-atelier-desk-btn"
+                onClick={() => setIsCuratorStudioOpen(true)}
+                className="opacity-30 hover:opacity-100 hover:text-[var(--color-sand)] transition-all text-[8px] tracking-[0.25em] focus:outline-none"
+                title="Atelier Ingestion & Notion Sync Desk"
+                aria-label="Atelier Desk"
+              >
+                [ ATELIER DESK ]
+              </button>
             </div>
 
             <div className="hidden md:block text-[9px] tracking-[0.28em] text-[var(--color-sand)]">

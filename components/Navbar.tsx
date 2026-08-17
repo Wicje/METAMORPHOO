@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ShoppingBag, Bookmark, Globe, Menu, X, Check, Sun, Moon, Sparkles, Palette } from 'lucide-react';
+import { ShoppingBag, Bookmark, Globe, Menu, X, Check } from 'lucide-react';
 import { CURRENCIES, CurrencyCode, currencyStore, useCurrency } from '../lib/currency';
 import { useLedger } from '../lib/ledger-store';
-import { themeStore, useTheme } from '../lib/theme';
 
 interface NavbarProps {
   activeTab: string;
@@ -21,13 +20,11 @@ export default function Navbar({
   cartCount,
   onOpenCart,
   onOpenLedger,
-  onOpenCurator,
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState(false);
   const currency = useCurrency();
   const ledger = useLedger();
-  const theme = useTheme();
 
   const savedCount = ledger.savedLooks.length + ledger.savedItems.length;
 
@@ -46,7 +43,7 @@ export default function Navbar({
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[var(--bg-surface)]/90 backdrop-blur-md border-b border-[var(--border-subtle)] transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 h-20 sm:h-24 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 h-20 sm:h-24 flex items-center justify-between">
         {/* Left: Brand Monogram & Wordmark */}
         <div className="flex items-center">
           <button
@@ -54,14 +51,14 @@ export default function Navbar({
             onClick={() => onSelectTab('wardrobe')}
             className="flex items-center text-left focus:outline-none group py-2"
           >
-            <span className="font-cormorant font-light text-2xl sm:text-[26px] tracking-[0.28em] text-[var(--text-primary)] group-hover:text-[var(--color-rust)] transition-colors">
+            <span className="font-cormorant font-light text-2xl sm:text-[28px] tracking-[0.3em] text-[var(--text-primary)] group-hover:text-[var(--color-rust)] transition-colors">
               METAMORPHOO
             </span>
           </button>
         </div>
 
-        {/* Center: Desktop Architecture Navigation with generous breathing room */}
-        <nav className="hidden md:flex items-center space-x-8 lg:space-x-12">
+        {/* Center: Desktop Architecture Navigation with Refined Whitespace */}
+        <nav className="hidden md:flex items-center space-x-7 lg:space-x-12">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -84,37 +81,17 @@ export default function Navbar({
           })}
         </nav>
 
-        {/* Right: Palette Switcher, Currency, Studio, Ledger & Wardrobe Bag with rhythmic dividers */}
-        <div className="flex items-center space-x-3 sm:space-x-4">
-          {/* Palette Mode Switcher (Obsidian vs Warm Bone Linen) */}
-          <button
-            id="palette-toggle-btn"
-            onClick={() => themeStore.toggleTheme()}
-            className="flex items-center space-x-1.5 font-montserrat text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1.5 border border-transparent hover:border-[var(--border-medium)] transition-all"
-            title={`Switch to ${theme === 'obsidian' ? 'Warm Bone Linen Light Mode' : 'Smoked Obsidian Dark Mode'}`}
-          >
-            {theme === 'obsidian' ? (
-              <>
-                <Sun className="w-3.5 h-3.5 text-[#C9B89A]" />
-                <span className="hidden xl:inline-block">BONE</span>
-              </>
-            ) : (
-              <>
-                <Moon className="w-3.5 h-3.5 text-[#8C7A6B]" />
-                <span className="hidden xl:inline-block">OBSIDIAN</span>
-              </>
-            )}
-          </button>
-
+        {/* Right: Currency Selector, Private Ledger & Wardrobe Bag */}
+        <div className="flex items-center space-x-3 sm:space-x-6">
           {/* Multi-Currency Dropdown */}
           <div className="relative">
             <button
               id="currency-selector-btn"
               onClick={() => setCurrencyDropdownOpen(!currencyDropdownOpen)}
-              className="flex items-center space-x-1 font-montserrat text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1.5 border border-transparent hover:border-[var(--border-medium)] transition-all"
+              className="flex items-center space-x-1.5 font-montserrat text-[10px] uppercase tracking-[0.22em] text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2.5 py-1.5 border border-transparent hover:border-[var(--border-medium)] transition-all"
               title="Select settlement currency"
             >
-              <Globe className="w-3 h-3 text-[var(--color-sand)]" />
+              <Globe className="w-3.5 h-3.5 text-[var(--color-sand)]" />
               <span>{currency}</span>
             </button>
 
@@ -149,24 +126,11 @@ export default function Navbar({
 
           <div className="hidden sm:block h-4 w-[1px] bg-[var(--border-subtle)]" />
 
-          {/* Atelier Curator Studio Desk Button */}
-          <button
-            id="open-atelier-studio-btn"
-            onClick={onOpenCurator}
-            className="flex items-center space-x-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-2.5 py-1.5 border border-[var(--border-subtle)] hover:border-[var(--color-sand)] focus:outline-none"
-            title="Open Atelier Curator Studio (Upload looks & collections)"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[var(--color-sand)]" />
-            <span className="font-montserrat text-[10px] uppercase tracking-[0.22em] hidden lg:inline-block">
-              STUDIO
-            </span>
-          </button>
-
           {/* Private Ledger */}
           <button
             id="open-ledger-btn"
             onClick={onOpenLedger}
-            className="flex items-center space-x-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-2 py-1.5 focus:outline-none relative"
+            className="flex items-center space-x-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-2 py-1.5 focus:outline-none relative"
             title="Open Private Ledger"
           >
             <Bookmark className="w-3.5 h-3.5 text-[var(--color-sand)]" />
@@ -182,7 +146,7 @@ export default function Navbar({
 
           <div className="hidden sm:block h-4 w-[1px] bg-[var(--border-subtle)]" />
 
-          {/* Wardrobe Cart Bag */}
+          {/* Wardrobe Acquisition Bag */}
           <button
             id="open-wardrobe-bag-btn"
             onClick={onOpenCart}
@@ -224,7 +188,7 @@ export default function Navbar({
                 onSelectTab(item.id);
                 setMobileMenuOpen(false);
               }}
-              className={`block w-full text-left font-montserrat text-xs uppercase tracking-[0.25em] py-2 ${
+              className={`block w-full text-left font-montserrat text-xs uppercase tracking-[0.25em] py-2.5 ${
                 activeTab === item.id
                   ? 'text-[var(--text-primary)] font-medium'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -233,27 +197,28 @@ export default function Navbar({
               {item.label}
             </button>
           ))}
-          <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between">
+
+          <div className="pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between">
             <button
               onClick={() => {
-                themeStore.toggleTheme();
+                onOpenLedger();
                 setMobileMenuOpen(false);
               }}
-              className="font-montserrat text-[10px] uppercase tracking-[0.2em] text-[var(--text-secondary)] flex items-center space-x-2"
+              className="font-montserrat text-[10px] uppercase tracking-[0.2em] text-[var(--text-secondary)] flex items-center space-x-1.5"
             >
-              {theme === 'obsidian' ? <Sun className="w-4 h-4 text-[#C9B89A]" /> : <Moon className="w-4 h-4 text-[#8C7A6B]" />}
-              <span>{theme === 'obsidian' ? 'SWITCH TO WARM BONE LIGHT' : 'SWITCH TO OBSIDIAN DARK'}</span>
+              <Bookmark className="w-3.5 h-3.5 text-[var(--color-sand)]" />
+              <span>PRIVATE LEDGER ({savedCount})</span>
             </button>
 
             <button
               onClick={() => {
-                onOpenCurator();
+                onOpenCart();
                 setMobileMenuOpen(false);
               }}
-              className="font-montserrat text-[10px] uppercase tracking-[0.2em] text-[var(--color-sand)] flex items-center space-x-1"
+              className="font-montserrat text-[10px] uppercase tracking-[0.2em] text-[var(--text-primary)] flex items-center space-x-1.5"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>ATELIER STUDIO</span>
+              <ShoppingBag className="w-3.5 h-3.5 text-[var(--color-rust)]" />
+              <span>BAG ({cartCount})</span>
             </button>
           </div>
         </div>
