@@ -2,13 +2,43 @@
 
 @layer base {
   :root {
+    --bg-canvas: #14110E;
+    --bg-surface: #1A1611;
+    --bg-elevated: #241E18;
+    --bg-subtle: #2A241E;
+    --border-subtle: rgba(232, 224, 213, 0.12);
+    --border-medium: rgba(232, 224, 213, 0.24);
+    --border-accent: #C9B89A;
+    --text-primary: #E8E0D5;
+    --text-secondary: rgba(232, 224, 213, 0.75);
+    --text-muted: rgba(232, 224, 213, 0.45);
+    --color-sand: #C9B89A;
+    --color-rust: #C4623A;
+    --color-highlight: #F5EFE4;
     --color-bone: #E8E0D5;
-    --color-warm-ivory: #F5EFE4;
+    --glass-bg: rgba(26, 22, 17, 0.92);
     --color-near-black: #1A1611;
-    --color-midnight-navy: #0F1A2E;
-    --color-burnt-sienna: #C4623A;
-    --color-mediterranean-sand: #C9B89A;
-    --color-warm-charcoal: #2A241E;
+    --color-warm-ivory: #F5EFE4;
+  }
+
+  [data-theme='bone'], .theme-bone {
+    --bg-canvas: #F5EFE6;
+    --bg-surface: #EAE2D5;
+    --bg-elevated: #DFD5C5;
+    --bg-subtle: #D5C9B5;
+    --border-subtle: rgba(42, 36, 30, 0.12);
+    --border-medium: rgba(42, 36, 30, 0.22);
+    --border-accent: #8C7A6B;
+    --text-primary: #1A1611;
+    --text-secondary: rgba(26, 22, 17, 0.78);
+    --text-muted: rgba(26, 22, 17, 0.45);
+    --color-sand: #8C7A6B;
+    --color-rust: #B8532B;
+    --color-highlight: #14110E;
+    --color-bone: #2A241E;
+    --glass-bg: rgba(245, 239, 230, 0.94);
+    --color-near-black: #EDE6DD;
+    --color-warm-ivory: #1A1611;
   }
 
   * {
@@ -18,14 +48,15 @@
   }
 
   body {
-    background-color: #1A1611;
-    color: #E8E0D5;
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
     font-family: var(--font-montserrat), 'Montserrat', sans-serif;
     overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   ::selection {
-    background-color: #C4623A;
+    background-color: var(--color-rust);
     color: #F5EFE4;
   }
 }
@@ -44,13 +75,13 @@
   height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: #14110E;
+  background: var(--bg-canvas);
 }
 ::-webkit-scrollbar-thumb {
-  background: #2E2721;
+  background: var(--border-medium);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #C4623A;
+  background: var(--color-rust);
 }
 
 /* Smooth snap scrolling utilities */

@@ -10,12 +10,21 @@ import {
   ArrowRight,
   ShieldCheck,
   Package,
-  CreditCard,
-  Building,
-  Smartphone,
+  MessageCircle,
+  Copy,
+  ExternalLink,
+  Sparkles,
+  Phone,
 } from 'lucide-react';
 import { CartItem } from '../lib/types';
 import { CURRENCIES, useCurrency } from '../lib/currency';
+import {
+  CONCIERGE_CONFIG,
+  buildAllocationManifestText,
+  getWhatsAppUrl,
+  saveAllocationLocally,
+  AllocationPayload,
+} from '../lib/concierge';
 
 interface WardrobeDrawerProps {
   isOpen: boolean;
@@ -35,16 +44,20 @@ export default function WardrobeDrawer({
   onClearWardrobe,
 }: WardrobeDrawerProps) {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [orderComplete, setOrderComplete] = useState(false);
-  const [orderRefNumber, setOrderRefNumber] = useState('MΦ-839201');
+  const [allocationComplete, setAllocationComplete] = useState(false);
+  const [allocationRefNumber, setAllocationRefNumber] = useState('');
+  const [copiedManifest, setCopiedManifest] = useState(false);
+  const [lastManifestText, setLastManifestText] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<'courier' | 'white_glove'>('courier');
-  const [paymentRail, setPaymentRail] = useState<'card' | 'paystack_transfer' | 'concierge'>('card');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const currency = useCurrency();
 
   // Customer form inputs
   const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientAddress, setClientAddress] = useState('');
+  const [clientNotes, setClientNotes] = useState('');
 
   const currentCurrencyConfig = CURRENCIES[currency] || CURRENCIES.USD;
 
@@ -63,18 +76,72 @@ export default function WardrobeDrawer({
   );
   const courierFeeUSD = deliveryMethod === 'white_glove' ? 120 : 0;
   const totalUSD = subtotalUSD + courierFeeUSD;
+  const formattedTotal = currentCurrencyConfig.format(totalUSD);
 
-  const handleCompleteOrder = (e: React.FormEvent) => {
+  const handleInitiateAllocation = async (e: React.FormEvent) => {
     e.preventDefault();
-    const generatedRef = `MΦ-${Math.floor(100000 + Math.random() * 900000)}`;
-    setOrderRefNumber(generatedRef);
-    setOrderComplete(true);
-    setTimeout(() => {
-      onClearWardrobe();
-      setIsCheckingOut(false);
-      setOrderComplete(false);
-      onClose();
-    }, 4500);
+    if (cartItems.length === 0 || isSubmitting) return;
+
+    setIsSubmitting(true);
+    const generatedRef = `MΦ-ALLOC-${Math.floor(100000 + Math.random() * 900000)}`;
+    setAllocationRefNumber(generatedRef);
+
+    const payload: AllocationPayload = {
+      reference: generatedRef,
+      clientName: clientName.trim(),
+      clientPhone: clientPhone.trim(),
+      clientEmail: clientEmail.trim(),
+      clientAddress: clientAddress.trim(),
+      notes: clientNotes.trim(),
+      items: cartItems,
+      currency,
+      subtotalUSD,
+      totalUSD,
+      formattedTotal,
+      deliveryMethod,
+      timestamp: Date.now(),
+    };
+
+    const manifestText = buildAllocationManifestText(payload);
+    setLastManifestText(manifestText);
+
+    // 1. Save to local storage for persistent client record
+    saveAllocationLocally(payload);
+
+    // 2. Post to lightweight serverless storage
+    try {
+      await fetch('/api/concierge/allocation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.warn('API ledger logging error, client local storage intact', err);
+    }
+
+    setIsSubmitting(false);
+    setAllocationComplete(true);
+
+    // 3. Launch WhatsApp Concierge in new window with manifest
+    const waUrl = getWhatsAppUrl(manifestText);
+    if (typeof window !== 'undefined') {
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleCopyManifest = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard && lastManifestText) {
+      navigator.clipboard.writeText(lastManifestText);
+      setCopiedManifest(true);
+      setTimeout(() => setCopiedManifest(false), 2500);
+    }
+  };
+
+  const handleResetAndClose = () => {
+    onClearWardrobe();
+    setIsCheckingOut(false);
+    setAllocationComplete(false);
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -100,11 +167,11 @@ export default function WardrobeDrawer({
           transition={{ type: 'spring', damping: 30, stiffness: 300 }}
           className="absolute right-0 top-0 bottom-0 w-full max-w-xl bg-[#1A1611] border-l border-[#E8E0D5]/15 flex flex-col justify-between shadow-2xl overflow-y-auto"
         >
-          {/* Header: Your Wardrobe */}
+          {/* Header */}
           <div className="p-6 sm:p-8 border-b border-[#E8E0D5]/10 flex items-center justify-between sticky top-0 bg-[#1A1611]/95 backdrop-blur-md z-10">
             <div>
               <span className="font-montserrat text-[9px] uppercase tracking-[0.3em] text-[#C9B89A] block">
-                METAMORPHOO ACQUISITION
+                METAMORPHOO PRIVATE ALLOCATION
               </span>
               <h2 className="font-cormorant font-light text-2xl sm:text-3xl text-[#E8E0D5] uppercase tracking-wider">
                 YOUR WARDROBE
@@ -123,45 +190,110 @@ export default function WardrobeDrawer({
 
           {/* Drawer Body */}
           <div className="p-6 sm:p-8 flex-1 space-y-6">
-            {orderComplete ? (
-              <div className="py-12 text-center space-y-5">
-                <div className="w-14 h-14 mx-auto rounded-full border border-[#C4623A] flex items-center justify-center text-[#C4623A]">
-                  <Check className="w-7 h-7" />
+            {allocationComplete ? (
+              /* Honest Concierge Allocation Confirmation Screen */
+              <div className="py-6 space-y-6">
+                <div className="text-center space-y-3">
+                  <div className="w-14 h-14 mx-auto rounded-full border border-[#C9B89A] flex items-center justify-center text-[#C9B89A] bg-[#14110E]">
+                    <Check className="w-7 h-7" />
+                  </div>
+                  <span className="font-montserrat text-[10px] uppercase tracking-[0.3em] text-[#C9B89A] block">
+                    ALLOCATION LOGGED WITH ATELIER
+                  </span>
+                  <h3 className="font-cormorant text-3xl text-[#E8E0D5] uppercase tracking-wider">
+                    DISPATCH REQUEST REGISTERED
+                  </h3>
+                  <p className="font-montserrat text-xs text-[#E8E0D5]/80 max-w-md mx-auto leading-relaxed">
+                    Your allocation request has been assigned reference{' '}
+                    <span className="text-[#E8E0D5] font-semibold tracking-wider">
+                      {allocationRefNumber}
+                    </span>{' '}
+                    and recorded in our private register.
+                  </p>
                 </div>
-                <span className="font-montserrat text-[10px] uppercase tracking-[0.3em] text-[#C9B89A] block">
-                  DISPATCH CONFIRMED
-                </span>
-                <h3 className="font-cormorant text-3xl text-[#E8E0D5] uppercase tracking-wider">
-                  WARDROBE ALLOCATED
-                </h3>
-                <p className="font-montserrat text-xs text-[#E8E0D5]/70 max-w-sm mx-auto leading-relaxed">
-                  Your acquisition order <span className="text-[#E8E0D5] font-medium">{orderRefNumber}</span> has been logged with the Metamorphoo Concierge. A formal garment dispatch dossier has been routed to {clientEmail || 'your email'}.
-                </p>
-                <div className="p-4 bg-[#14110E] border border-[#E8E0D5]/15 text-left text-xs font-montserrat space-y-1 max-w-sm mx-auto text-[#E8E0D5]/80">
-                  <div className="flex justify-between">
-                    <span className="text-[#C9B89A]">PAYMENT SETTLEMENT:</span>
-                    <span>{paymentRail.toUpperCase().replace('_', ' ')}</span>
+
+                {/* Status Card & Instructions */}
+                <div className="p-5 bg-[#14110E] border border-[#E8E0D5]/15 space-y-4 text-left font-montserrat text-xs">
+                  <div className="flex items-start space-x-3 pb-3 border-b border-[#E8E0D5]/10">
+                    <MessageCircle className="w-5 h-5 text-[#25D366] flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-[#E8E0D5] font-medium text-xs uppercase tracking-wider">
+                        Next: Concierge Verification
+                      </h4>
+                      <p className="text-[11px] text-[#E8E0D5]/70 mt-1 leading-relaxed">
+                        A Metamorphoo stylist confirms fabric lot availability, verifies sizing measurements with you, and coordinates direct settlement (wire transfer or custom private card link).
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#C9B89A]">CURRENCY:</span>
-                    <span>{currency}</span>
+
+                  <div className="space-y-2 text-[11px] text-[#E8E0D5]/80">
+                    <div className="flex justify-between">
+                      <span className="text-[#C9B89A]">CLIENT:</span>
+                      <span className="text-[#E8E0D5]">{clientName || 'Private Client'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#C9B89A]">WARDROBE VALUE:</span>
+                      <span className="text-[#E8E0D5]">{formattedTotal}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#C9B89A]">DELIVERY PROTOCOL:</span>
+                      <span>
+                        {deliveryMethod === 'white_glove'
+                          ? 'White Glove Atelier Courier'
+                          : 'Complimentary Express Transit'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#C9B89A]">SETTLEMENT RAIL:</span>
+                      <span>Direct Atelier Wire / Concierge Transfer</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#C9B89A]">PACKAGING:</span>
-                    <span>MΦ Cedar Garment Case</span>
-                  </div>
+                </div>
+
+                {/* Primary Action Buttons */}
+                <div className="space-y-3 pt-2">
+                  <a
+                    href={getWhatsAppUrl(lastManifestText)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-4 bg-[#25D366] hover:bg-[#20bd5a] text-[#14110E] font-montserrat text-xs uppercase tracking-[0.25em] font-semibold transition-colors flex items-center justify-center space-x-2.5"
+                  >
+                    <MessageCircle className="w-4 h-4 fill-current" />
+                    <span>OPEN WHATSAPP CHAT WITH ATELIER</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyManifest}
+                    className="w-full py-3 border border-[#E8E0D5]/30 hover:border-[#E8E0D5] text-[#E8E0D5] font-montserrat text-[10px] uppercase tracking-[0.25em] flex items-center justify-center space-x-2 transition-colors"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-[#C9B89A]" />
+                    <span>{copiedManifest ? 'MANIFEST COPIED TO CLIPBOARD' : 'COPY SARTORIAL MANIFEST'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleResetAndClose}
+                    className="w-full py-2.5 text-center font-montserrat text-[10px] uppercase tracking-[0.25em] text-[#E8E0D5]/60 hover:text-[#E8E0D5]"
+                  >
+                    DONE · RETURN TO WARDROBE
+                  </button>
                 </div>
               </div>
             ) : isCheckingOut ? (
-              /* Checkout Form with Dual-Rail Payment */
-              <form onSubmit={handleCompleteOrder} className="space-y-6">
+              /* Honest Concierge Allocation Request Form */
+              <form onSubmit={handleInitiateAllocation} className="space-y-6">
                 <div className="space-y-1">
                   <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C9B89A]">
-                    CONCIERGE DISPATCH
+                    PRIVATE CLIENT ALLOCATION
                   </span>
                   <h3 className="font-cormorant text-2xl text-[#E8E0D5] uppercase tracking-wider">
-                    DELIVERY & SETTLEMENT
+                    ATELIER DISPATCH MANIFEST
                   </h3>
+                  <p className="font-montserrat text-xs text-[#E8E0D5]/70 leading-relaxed">
+                    Pieces are individually inspected and reserved directly with the House Concierge. No automated blind charges are billed.
+                  </p>
                 </div>
 
                 {/* Delivery Option */}
@@ -206,59 +338,16 @@ export default function WardrobeDrawer({
                   </div>
                 </div>
 
-                {/* Payment Rail Selection */}
-                <div className="space-y-2">
-                  <label className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/60 block">
-                    PAYMENT RAIL & SETTLEMENT GATEWAY
-                  </label>
-                  <div className="space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentRail('card')}
-                      className={`w-full p-3 text-left border text-xs font-montserrat transition-all flex items-center justify-between ${
-                        paymentRail === 'card'
-                          ? 'border-[#E8E0D5] bg-[#14110E] text-[#E8E0D5]'
-                          : 'border-[#E8E0D5]/15 text-[#E8E0D5]/60 hover:border-[#E8E0D5]/30'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2.5">
-                        <CreditCard className="w-4 h-4 text-[#C9B89A]" />
-                        <span>International Private Card (Stripe / Visa / Master / Amex)</span>
-                      </div>
-                      <span className="text-[9px] uppercase tracking-wider text-[#C9B89A]">GLOBAL</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setPaymentRail('paystack_transfer')}
-                      className={`w-full p-3 text-left border text-xs font-montserrat transition-all flex items-center justify-between ${
-                        paymentRail === 'paystack_transfer'
-                          ? 'border-[#E8E0D5] bg-[#14110E] text-[#E8E0D5]'
-                          : 'border-[#E8E0D5]/15 text-[#E8E0D5]/60 hover:border-[#E8E0D5]/30'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2.5">
-                        <Building className="w-4 h-4 text-[#C9B89A]" />
-                        <span>Nigeria Direct Bank Transfer / Paystack Gateway (Zero Surcharge)</span>
-                      </div>
-                      <span className="text-[9px] uppercase tracking-wider text-[#C4623A]">NGN ₦ / CARD</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setPaymentRail('concierge')}
-                      className={`w-full p-3 text-left border text-xs font-montserrat transition-all flex items-center justify-between ${
-                        paymentRail === 'concierge'
-                          ? 'border-[#E8E0D5] bg-[#14110E] text-[#E8E0D5]'
-                          : 'border-[#E8E0D5]/15 text-[#E8E0D5]/60 hover:border-[#E8E0D5]/30'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2.5">
-                        <Smartphone className="w-4 h-4 text-[#C9B89A]" />
-                        <span>Private WhatsApp Concierge Allocation & Tailor Consultation</span>
-                      </div>
-                      <span className="text-[9px] uppercase tracking-wider text-[#C9B89A]">DIRECT</span>
-                    </button>
+                {/* Concierge Mechanism Notice */}
+                <div className="p-4 bg-[#14110E] border border-[#E8E0D5]/15 flex items-start space-x-3">
+                  <MessageCircle className="w-5 h-5 text-[#25D366] flex-shrink-0 mt-0.5" />
+                  <div className="text-xs font-montserrat space-y-1">
+                    <span className="text-[#E8E0D5] font-medium uppercase tracking-wider text-[10px] block">
+                      ZERO-FRICTION CONCIERGE SETTLEMENT
+                    </span>
+                    <p className="text-[11px] text-[#E8E0D5]/70 leading-relaxed">
+                      Submitting generates an official allocation manifest and connects you directly to our WhatsApp Concierge ({CONCIERGE_CONFIG.displayPhone}) to confirm stock, tailor measurements, and settle payment via direct bank transfer or private link.
+                    </p>
                   </div>
                 </div>
 
@@ -266,7 +355,7 @@ export default function WardrobeDrawer({
                 <div className="space-y-3 pt-2">
                   <div>
                     <label className="block font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/60 mb-1">
-                      CLIENT FULL NAME
+                      CLIENT FULL NAME *
                     </label>
                     <input
                       type="text"
@@ -280,11 +369,24 @@ export default function WardrobeDrawer({
 
                   <div>
                     <label className="block font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/60 mb-1">
+                      WHATSAPP NUMBER OR PHONE (FOR DIRECT ALLOCATION CONFIRMATION) *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={clientPhone}
+                      onChange={(e) => setClientPhone(e.target.value)}
+                      placeholder="+234 ... or +44 ... / +1 ..."
+                      className="w-full bg-[#14110E] border border-[#E8E0D5]/20 px-4 py-3 text-xs text-[#E8E0D5] font-montserrat focus:outline-none focus:border-[#E8E0D5]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/60 mb-1">
                       CONFIDENTIAL EMAIL
                     </label>
                     <input
                       type="email"
-                      required
                       value={clientEmail}
                       onChange={(e) => setClientEmail(e.target.value)}
                       placeholder="client@salondispatch.com"
@@ -294,15 +396,28 @@ export default function WardrobeDrawer({
 
                   <div>
                     <label className="block font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/60 mb-1">
-                      DELIVERY ADDRESS & COUNTRY
+                      DELIVERY DESTINATION & COUNTRY *
                     </label>
                     <textarea
                       required
                       rows={2}
                       value={clientAddress}
                       onChange={(e) => setClientAddress(e.target.value)}
-                      placeholder="Private residence or diplomatic pouch destination..."
+                      placeholder="City, Country & Residence / Diplomatic dispatch address..."
                       className="w-full bg-[#14110E] border border-[#E8E0D5]/20 px-4 py-3 text-xs text-[#E8E0D5] font-montserrat focus:outline-none focus:border-[#E8E0D5] resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/60 mb-1">
+                      BESPOKE SIZING / SPECIAL REQUESTS (OPTIONAL)
+                    </label>
+                    <input
+                      type="text"
+                      value={clientNotes}
+                      onChange={(e) => setClientNotes(e.target.value)}
+                      placeholder="e.g. Hem trouser to 32in, rush weekend dispatch, etc."
+                      className="w-full bg-[#14110E] border border-[#E8E0D5]/20 px-4 py-2.5 text-xs text-[#E8E0D5] font-montserrat focus:outline-none focus:border-[#E8E0D5]"
                     />
                   </div>
                 </div>
@@ -311,10 +426,16 @@ export default function WardrobeDrawer({
                 <div className="space-y-3 pt-2">
                   <button
                     type="submit"
-                    id="confirm-acquisition-btn"
-                    className="w-full py-4 bg-[#E8E0D5] hover:bg-[#F5EFE4] text-[#1A1611] font-montserrat text-xs uppercase tracking-[0.28em] font-medium transition-colors"
+                    id="initiate-concierge-allocation-btn"
+                    disabled={isSubmitting}
+                    className="w-full py-4 bg-[#E8E0D5] hover:bg-[#F5EFE4] text-[#1A1611] font-montserrat text-xs uppercase tracking-[0.28em] font-semibold transition-colors flex items-center justify-center space-x-2"
                   >
-                    COMPLETE ACQUISITION — {currentCurrencyConfig.format(totalUSD)}
+                    <MessageCircle className="w-4 h-4 text-[#1A1611]" />
+                    <span>
+                      {isSubmitting
+                        ? 'LOGGING ALLOCATION...'
+                        : `INITIATE CONCIERGE ALLOCATION — ${formattedTotal}`}
+                    </span>
                   </button>
 
                   <button
@@ -429,8 +550,8 @@ export default function WardrobeDrawer({
             )}
           </div>
 
-          {/* Drawer Footer (Only if not checking out and has items) */}
-          {!isCheckingOut && !orderComplete && cartItems.length > 0 && (
+          {/* Drawer Footer */}
+          {!isCheckingOut && !allocationComplete && cartItems.length > 0 && (
             <div className="p-6 sm:p-8 border-t border-[#E8E0D5]/15 bg-[#14110E] space-y-4">
               <div className="space-y-1.5">
                 <div className="flex justify-between items-baseline">
@@ -442,17 +563,17 @@ export default function WardrobeDrawer({
                   </span>
                 </div>
                 <p className="font-montserrat text-[9px] text-[#E8E0D5]/50 tracking-wider">
-                  Includes complimentary insured express courier. Curated in single dispatch.
+                  Includes complimentary insured express courier. Handled via Private Concierge.
                 </p>
               </div>
 
               <button
-                id="proceed-to-acquisition-btn"
+                id="proceed-to-allocation-btn"
                 onClick={() => setIsCheckingOut(true)}
                 className="w-full group py-4 px-6 border border-[#E8E0D5] hover:border-[#C4623A] bg-[#1A1611] hover:bg-[#C4623A] text-[#E8E0D5] hover:text-[#F5EFE4] transition-all duration-300 flex items-center justify-center space-x-3 focus:outline-none"
               >
                 <span className="font-montserrat text-xs uppercase tracking-[0.28em] font-medium">
-                  PROCEED TO ACQUISITION
+                  PROCEED TO PRIVATE ALLOCATION
                 </span>
                 <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1.5 transition-transform" />
               </button>

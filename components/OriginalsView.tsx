@@ -2,23 +2,79 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { motion } from 'motion/react';
-import { Sparkles, Check, ArrowRight, Shield } from 'lucide-react';
+import { Check, ArrowRight, MessageCircle, ExternalLink } from 'lucide-react';
+import {
+  saveWaitlistLocally,
+  getSavedWaitlists,
+  getWhatsAppUrl,
+  CONCIERGE_CONFIG,
+  WaitlistPayload,
+} from '../lib/concierge';
 
 interface OriginalsViewProps {
   onExploreWardrobe: () => void;
 }
 
 export default function OriginalsView({ onExploreWardrobe }: OriginalsViewProps) {
-  const [email, setEmail] = useState('');
-  const [joinedWaitlist, setJoinedWaitlist] = useState(false);
+  const [clientName, setClientName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleWaitlist = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      setJoinedWaitlist(true);
+  // Lazy initializer to avoid synchronous setState inside useEffect
+  const [initialData] = useState(() => {
+    const existing = typeof window !== 'undefined' ? getSavedWaitlists() : [];
+    if (existing.length > 0) {
+      return {
+        joined: true,
+        id: existing[0].id,
+        email: existing[0].email,
+      };
     }
+    return { joined: false, id: '', email: '' };
+  });
+
+  const [email, setEmail] = useState(initialData.email);
+  const [joinedWaitlist, setJoinedWaitlist] = useState(initialData.joined);
+  const [registeredId, setRegisteredId] = useState(initialData.id);
+
+  const handleWaitlist = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || isSubmitting) return;
+
+    setIsSubmitting(true);
+    const assignedId = `ORIGINALS-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const payload: WaitlistPayload = {
+      id: assignedId,
+      email: email.trim().toLowerCase(),
+      name: clientName.trim(),
+      source: 'ORIGINALS_CAPSULE_PAGE',
+      timestamp: Date.now(),
+    };
+
+    // 1. Save in client local persistence
+    saveWaitlistLocally(payload);
+    setRegisteredId(assignedId);
+    setJoinedWaitlist(true);
+
+    // 2. Post to API route for lightweight backend persistence
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.id) {
+        setRegisteredId(data.id);
+      }
+    } catch (err) {
+      console.warn('Waitlist logging API error, local copy saved', err);
+    }
+
+    setIsSubmitting(false);
   };
+
+  const whatsAppWaitlistMsg = `Hello Metamorphoo Concierge,\n\nI have registered my allocation priority for the *MΦ ORIGINALS* Inaugural Capsule.\nRegistration Ref: *${registeredId}*\nEmail: ${email}\n\nPlease include me on the private priority allocation list before public release.`;
 
   const previewPieces = [
     {
@@ -159,16 +215,52 @@ export default function OriginalsView({ onExploreWardrobe }: OriginalsViewProps)
           </p>
 
           {joinedWaitlist ? (
-            <div className="p-4 border border-[#C4623A] bg-[#1A1611] space-y-2">
-              <div className="flex items-center justify-center space-x-2 text-[#C4623A]">
-                <Check className="w-4 h-4" />
-                <span className="font-montserrat text-xs uppercase tracking-[0.25em] font-medium">
-                  REGISTERED IN THE ARCHIVE
-                </span>
+            <div className="p-6 border border-[#C9B89A]/40 bg-[#14110E] space-y-4 max-w-lg mx-auto text-left">
+              <div className="flex items-center space-x-3 pb-3 border-b border-[#E8E0D5]/10">
+                <div className="w-8 h-8 rounded-full bg-[#C9B89A]/10 border border-[#C9B89A] flex items-center justify-center text-[#C9B89A] flex-shrink-0">
+                  <Check className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#C9B89A] block">
+                    ARCHIVE REGISTRATION CONFIRMED
+                  </span>
+                  <h4 className="font-cormorant text-xl text-[#E8E0D5] font-light uppercase tracking-wide">
+                    ALLOCATION REGISTRY NO. {registeredId || 'ORIGINALS-01'}
+                  </h4>
+                </div>
               </div>
-              <p className="font-montserrat text-[11px] text-[#E8E0D5]/70">
-                You will receive a numbered dispatch prior to the Phase 2 drop.
-              </p>
+
+              <div className="space-y-1.5 font-montserrat text-xs text-[#E8E0D5]/80">
+                <div className="flex justify-between">
+                  <span className="text-[#C9B89A]">REGISTERED CLIENT:</span>
+                  <span>{email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#C9B89A]">PROTOCOL:</span>
+                  <span>Early Private Access (48hr Priority Window)</span>
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row gap-3">
+                <a
+                  href={getWhatsAppUrl(whatsAppWaitlistMsg)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-3 bg-[#25D366] hover:bg-[#20bd5a] text-[#14110E] font-montserrat text-[10px] uppercase tracking-[0.2em] font-semibold flex items-center justify-center space-x-2 transition-colors"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                  <span>CONFIRM ON WHATSAPP</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setJoinedWaitlist(false)}
+                  className="py-3 px-4 border border-[#E8E0D5]/20 hover:border-[#E8E0D5] text-[#E8E0D5]/70 hover:text-[#E8E0D5] font-montserrat text-[10px] uppercase tracking-[0.2em] transition-colors text-center"
+                >
+                  REGISTER ANOTHER EMAIL
+                </button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleWaitlist} className="space-y-4 max-w-md mx-auto">
@@ -177,15 +269,16 @@ export default function OriginalsView({ onExploreWardrobe }: OriginalsViewProps)
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter private email for allocation"
+                placeholder="Enter confidential email for numbered allocation"
                 className="w-full bg-[#1A1611] border border-[#E8E0D5]/20 px-4 py-3 text-xs text-[#E8E0D5] font-montserrat placeholder-[#E8E0D5]/30 text-center focus:outline-none focus:border-[#E8E0D5]"
               />
               <button
                 type="submit"
                 id="originals-register-btn"
+                disabled={isSubmitting}
                 className="w-full py-3.5 border border-[#E8E0D5] hover:border-[#C4623A] bg-[#1A1611] hover:bg-[#C4623A] text-[#E8E0D5] hover:text-[#F5EFE4] transition-all font-montserrat text-xs uppercase tracking-[0.25em] font-medium"
               >
-                REQUEST ALLOCATION ACCESS
+                {isSubmitting ? 'RECORDING IN ARCHIVE...' : 'REQUEST ALLOCATION ACCESS'}
               </button>
             </form>
           )}

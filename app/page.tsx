@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import WardrobeScroll from '../components/WardrobeScroll';
 import LookDetailModal from '../components/LookDetailModal';
@@ -10,11 +10,14 @@ import EditDirectoryView from '../components/EditDirectoryView';
 import OriginalsView from '../components/OriginalsView';
 import WardrobeDrawer from '../components/WardrobeDrawer';
 import CuratorLedgerModal from '../components/CuratorLedgerModal';
+import CuratorStudioModal from '../components/CuratorStudioModal';
 import LedgerModal from '../components/LedgerModal';
 import ArchiveVaultView from '../components/ArchiveVaultView';
-import { LAUNCH_LOOKS, ARCHIVE_VAULT_LOOKS } from '../lib/data';
+import ConciergeChatWidget from '../components/ConciergeChatWidget';
 import { Look, Item, CartItem } from '../lib/types';
 import { useCart } from '../lib/cart-store';
+import { useCatalog } from '../lib/catalog-store';
+import { themeStore } from '../lib/theme';
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'wardrobe' | 'archive' | 'edit' | 'originals' | 'house'>('wardrobe');
@@ -23,7 +26,14 @@ export default function HomePage() {
   const [isWardrobeDrawerOpen, setIsWardrobeDrawerOpen] = useState(false);
   const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
   const [isManifestoOpen, setIsManifestoOpen] = useState(false);
+  const [isCuratorStudioOpen, setIsCuratorStudioOpen] = useState(false);
   const [cartItems, setCartItems] = useCart();
+  const catalog = useCatalog();
+
+  // Initialize client theme from localStorage on initial render
+  useEffect(() => {
+    themeStore.init();
+  }, []);
 
   // Save cart to store
   const updateCart = (items: CartItem[]) => {
@@ -95,7 +105,7 @@ export default function HomePage() {
   const totalItemCount = cartItems.reduce((sum, ci) => sum + ci.quantity, 0);
 
   return (
-    <div className="relative min-h-screen bg-[#1A1611] text-[#E8E0D5] font-montserrat">
+    <div className="relative min-h-screen bg-[var(--bg-surface)] text-[var(--text-primary)] font-montserrat transition-colors duration-300">
       {/* Universal Sticky Minimalist Navbar */}
       <Navbar
         activeTab={activeTab}
@@ -107,12 +117,13 @@ export default function HomePage() {
         cartCount={totalItemCount}
         onOpenCart={() => setIsWardrobeDrawerOpen(true)}
         onOpenLedger={() => setIsLedgerModalOpen(true)}
+        onOpenCurator={() => setIsCuratorStudioOpen(true)}
       />
 
       {/* Main View Router */}
       {activeTab === 'wardrobe' && (
         <WardrobeScroll
-          looks={LAUNCH_LOOKS}
+          looks={catalog.customLaunchLooks}
           onSelectLook={(look) => setSelectedLook(look)}
           onSelectItem={(item, look) => setSelectedItem({ item, look })}
           onShopFullLook={handleShopFullLook}
@@ -121,7 +132,7 @@ export default function HomePage() {
 
       {activeTab === 'archive' && (
         <ArchiveVaultView
-          vaultLooks={ARCHIVE_VAULT_LOOKS}
+          vaultLooks={catalog.customArchiveLooks}
           onSelectLook={(look) => setSelectedLook(look)}
           onSelectItem={(item, look) => setSelectedItem({ item, look })}
         />
@@ -129,7 +140,7 @@ export default function HomePage() {
 
       {activeTab === 'edit' && (
         <EditDirectoryView
-          looks={LAUNCH_LOOKS}
+          looks={catalog.customLaunchLooks}
           onSelectItem={(item, look) => setSelectedItem({ item, look })}
           onSelectLook={(look) => {
             setActiveTab('wardrobe');
@@ -206,80 +217,206 @@ export default function HomePage() {
         }}
       />
 
+      {/* Curator Studio Ingestion & Upload Desk Modal */}
+      <CuratorStudioModal
+        isOpen={isCuratorStudioOpen}
+        onClose={() => setIsCuratorStudioOpen(false)}
+      />
+
       {/* Curator's Editorial Brief & Criteria Modal */}
       <CuratorLedgerModal
         isOpen={isManifestoOpen}
         onClose={() => setIsManifestoOpen(false)}
       />
 
-      {/* Global Minimalist Footer */}
-      <footer id="global-footer" className="border-t border-[#E8E0D5]/10 bg-[#14110E] py-12 px-6 sm:px-12 text-[#E8E0D5]/60">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-          <div>
-            <span className="font-cormorant text-xl tracking-[0.25em] text-[#E8E0D5] uppercase font-light">
-              METAMORPHOO
-            </span>
-            <p className="font-montserrat text-[10px] tracking-[0.2em] text-[#E8E0D5]/40 mt-1 uppercase">
-              A curated world of complete decisions · Lagos · Lisbon · Milan
-            </p>
+      {/* Floating Active Atelier Concierge Widget */}
+      <ConciergeChatWidget />
+
+      {/* Global Architectural Editorial Footer */}
+      <footer id="global-footer" className="border-t border-[var(--border-subtle)] bg-[var(--bg-canvas)] pt-20 sm:pt-28 pb-12 px-6 sm:px-12 lg:px-16 text-[var(--text-muted)] transition-colors duration-300">
+        <div className="max-w-7xl mx-auto space-y-16 sm:space-y-24">
+          {/* 4 Architectural Columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-12 text-left">
+            {/* Column 1: The House */}
+            <div className="space-y-4">
+              <span className="font-montserrat text-[9px] uppercase tracking-[0.28em] text-[var(--color-sand)] block font-semibold">
+                THE SARTORIAL HOUSE
+              </span>
+              <p className="font-montserrat text-xs text-[var(--text-secondary)] leading-relaxed font-light">
+                A curated world of complete sartorial decisions. We reject isolated garments in favor of sovereign aesthetic harmony, fluid architectural drape, and natural fibre purity.
+              </p>
+              <div className="pt-2 text-[10px] font-montserrat tracking-[0.2em] text-[var(--text-muted)] uppercase">
+                Lagos · Lisbon · Milan
+              </div>
+            </div>
+
+            {/* Column 2: Architecture & Vault Navigation */}
+            <div className="space-y-4">
+              <span className="font-montserrat text-[9px] uppercase tracking-[0.28em] text-[var(--color-sand)] block font-semibold">
+                COLLECTIONS & ARCHIVE
+              </span>
+              <ul className="space-y-2.5 font-montserrat text-xs tracking-[0.15em] uppercase">
+                <li>
+                  <button
+                    onClick={() => {
+                      setActiveTab('wardrobe');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="hover:text-[var(--text-primary)] hover:translate-x-1 transition-all duration-200"
+                  >
+                    The Wardrobe (Season I)
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      setActiveTab('archive');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="hover:text-[var(--text-primary)] hover:translate-x-1 transition-all duration-200"
+                  >
+                    Archive Vault
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      setActiveTab('edit');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="hover:text-[var(--text-primary)] hover:translate-x-1 transition-all duration-200"
+                  >
+                    Edit Standard Directory
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      setActiveTab('originals');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="hover:text-[var(--text-primary)] hover:translate-x-1 transition-all duration-200"
+                  >
+                    House Originals
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      setActiveTab('house');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="hover:text-[var(--text-primary)] hover:translate-x-1 transition-all duration-200"
+                  >
+                    The House Manifesto
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Atelier Protocol & Private Desk */}
+            <div className="space-y-4">
+              <span className="font-montserrat text-[9px] uppercase tracking-[0.28em] text-[var(--color-sand)] block font-semibold">
+                PRIVATE CLIENT SERVICES
+              </span>
+              <ul className="space-y-2.5 font-montserrat text-xs tracking-[0.15em] uppercase">
+                <li>
+                  <button
+                    onClick={() => setIsLedgerModalOpen(true)}
+                    className="hover:text-[var(--text-primary)] hover:translate-x-1 transition-all duration-200"
+                  >
+                    Private Client Ledger
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => setIsCuratorStudioOpen(true)}
+                    className="text-[var(--color-sand)] hover:text-[var(--color-rust)] hover:translate-x-1 transition-all duration-200 font-medium"
+                  >
+                    + Upload Capsule (Studio)
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => setIsManifestoOpen(true)}
+                    className="hover:text-[var(--color-rust)] hover:translate-x-1 transition-all duration-200"
+                  >
+                    Editorial Brief & Criteria
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => setIsWardrobeDrawerOpen(true)}
+                    className="hover:text-[var(--text-primary)] hover:translate-x-1 transition-all duration-200"
+                  >
+                    Wardrobe Bag ({totalItemCount})
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 4: Fibre Purity & Provenance */}
+            <div className="space-y-4">
+              <span className="font-montserrat text-[9px] uppercase tracking-[0.28em] text-[var(--color-sand)] block font-semibold">
+                ATELIER STANDARDS
+              </span>
+              <ul className="space-y-2 font-montserrat text-xs text-[var(--text-secondary)] font-light leading-relaxed">
+                <li className="flex items-center space-x-2">
+                  <span className="text-[var(--color-sand)]">✦</span>
+                  <span>100% Natural Fibre Integrity</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <span className="text-[var(--color-sand)]">✦</span>
+                  <span>The One-Rule-Broken Doctrine</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <span className="text-[var(--color-sand)]">✦</span>
+                  <span>Zero Synthetic Tension Guarantee</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <span className="text-[var(--color-sand)]">✦</span>
+                  <span>Direct Atelier Concierge Support</span>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-8 font-montserrat text-[10px] uppercase tracking-[0.25em]">
+          {/* Monumental Architectural Brand Display */}
+          <div className="pt-10 sm:pt-16 border-t border-[var(--border-subtle)] text-center overflow-hidden">
             <button
               onClick={() => {
                 setActiveTab('wardrobe');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="hover:text-[#E8E0D5] transition-colors"
+              className="w-full text-center focus:outline-none group block py-4"
+              title="Return to The Wardrobe"
             >
-              The Wardrobe
+              <h1 className="font-cormorant font-light text-5xl sm:text-7xl md:text-8xl lg:text-[115px] xl:text-[145px] tracking-[0.2em] sm:tracking-[0.25em] text-[var(--text-primary)] group-hover:text-[var(--color-sand)] transition-colors duration-500 uppercase leading-none select-none">
+                METAMORPHOO
+              </h1>
             </button>
-            <button
-              onClick={() => {
-                setActiveTab('archive');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="hover:text-[#E8E0D5] transition-colors"
-            >
-              Archive Vault
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('edit');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="hover:text-[#E8E0D5] transition-colors"
-            >
-              Edit Standard
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('originals');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="hover:text-[#E8E0D5] transition-colors"
-            >
-              Originals
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('house');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="hover:text-[#E8E0D5] transition-colors"
-            >
-              The House
-            </button>
-            <button
-              onClick={() => setIsManifestoOpen(true)}
-              className="hover:text-[#C4623A] transition-colors"
-            >
-              Editorial Brief
-            </button>
+            <p className="font-montserrat text-[10px] sm:text-[11px] tracking-[0.35em] text-[var(--text-muted)] uppercase mt-4">
+              A CURATED WORLD OF COMPLETE DECISIONS · DIRECTED BY ANI CHISOM
+            </p>
           </div>
 
-          <div className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#E8E0D5]/30">
-            © {new Date().getFullYear()} METAMORPHOO. All Rights Reserved.
+          {/* Bottom Bar with Copyright and Back to Top */}
+          <div className="pt-8 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] font-montserrat uppercase tracking-[0.2em] text-[var(--text-muted)]">
+            <div>
+              © {new Date().getFullYear()} METAMORPHOO BUREAU. ALL RIGHTS RESERVED.
+            </div>
+
+            <div className="hidden md:block text-[9px] tracking-[0.28em] text-[var(--color-sand)]">
+              ZERO SYNTHETIC TENSION · COMPLETE ENSEMBLE HARMONY
+            </div>
+
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="hover:text-[var(--text-primary)] transition-colors flex items-center space-x-1"
+            >
+              <span>BACK TO APEX</span>
+              <span>↑</span>
+            </button>
           </div>
         </div>
       </footer>
