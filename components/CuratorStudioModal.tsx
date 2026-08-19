@@ -43,6 +43,14 @@ interface DraftPiece {
   silhouette: string;
   description: string;
   curationNote: string;
+  drapeWeight?: string;
+  modelStats?: string;
+  recommendedSizing?: string;
+  measurementsSummary?: {
+    chestOrWaist?: string;
+    length?: string;
+    hemOrOpening?: string;
+  };
   image: string;
   pinLocation?: { x: number; y: number };
 }
@@ -340,9 +348,9 @@ Connect your database in Metamorphoo Atelier Studio by entering your Notion Data
       composition: p.composition || '100% Natural Archival Fibre',
       tier: 'EDIT',
       origin: 'Atelier Metamorphoo Certified Allocation',
-      silhouette: p.silhouette || 'Natural Drop',
+      silhouette: p.silhouette || 'Fluid Architectural',
       image: p.image || heroImage,
-      sizes: Array.isArray(p.sizes) ? p.sizes : ['S', 'M', 'L'],
+      sizes: Array.isArray(p.sizes) && p.sizes.length > 0 ? p.sizes : ['S', 'M', 'L'],
       description: p.description || 'Mastercrafted garment for complete ensemble harmony.',
       curationNote: p.curationNote || 'Approved under Metamorphoo editorial standard.',
       pinLocation: p.pinLocation || {
@@ -350,10 +358,17 @@ Connect your database in Metamorphoo Atelier Studio by entering your Notion Data
         y: 25 + ((idx * 25) % 50),
       },
       fitGuidance: {
-        cut: 'Fluid Architectural',
-        modelStats: "Model is 188cm / 6'2\", wearing Size L",
-        drapeWeight: 'Medium Drape (240-300gsm)',
-        recommendedSizing: 'True to size for relaxed silhouette.',
+        cut: (p.silhouette as any) || 'Fluid Architectural',
+        modelStats: p.modelStats || "Model is 188cm / 6'2\", wearing Size L",
+        drapeWeight: (p.drapeWeight as any) || 'Heavyweight Archival (340-420gsm)',
+        recommendedSizing: p.recommendedSizing || 'True to size for relaxed silhouette.',
+        measurementsSummary: p.measurementsSummary
+          ? {
+              chestOrWaist: p.measurementsSummary.chestOrWaist || '118cm (Chest)',
+              length: p.measurementsSummary.length || '114cm',
+              hemOrOpening: p.measurementsSummary.hemOrOpening || '52cm',
+            }
+          : undefined,
       },
       provenance: {
         condition: 'Atelier Curated Standard',
@@ -1219,9 +1234,31 @@ Connect your database in Metamorphoo Atelier Studio by entering your Notion Data
                         </div>
 
                         <div>
-                          <label className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)] block mb-1">
-                            SIZES (COMMA SEPARATED)
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)] block">
+                              AVAILABLE SIZES
+                            </label>
+                            {/* Size Presets */}
+                            <div className="flex items-center space-x-1">
+                              <span className="text-[8px] font-montserrat text-[var(--text-muted)] uppercase">Presets:</span>
+                              {[
+                                { label: 'S-XL', val: ['S', 'M', 'L', 'XL'] },
+                                { label: '30-36', val: ['30', '32', '34', '36'] },
+                                { label: '46-52', val: ['46', '48', '50', '52'] },
+                                { label: 'One Size', val: ['ONE SIZE'] },
+                                { label: 'Bespoke', val: ['CUSTOM ATELIER BESPOKE'] },
+                              ].map((preset) => (
+                                <button
+                                  key={preset.label}
+                                  type="button"
+                                  onClick={() => handleUpdatePiece(idx, 'sizes', preset.val)}
+                                  className="px-1.5 py-0.5 bg-[var(--bg-canvas)] border border-[var(--border-subtle)] text-[7px] font-mono hover:border-[var(--color-sand)] text-[var(--text-secondary)]"
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                           <input
                             type="text"
                             value={Array.isArray(piece.sizes) ? piece.sizes.join(', ') : 'S, M, L'}
@@ -1235,6 +1272,76 @@ Connect your database in Metamorphoo Atelier Studio by entering your Notion Data
                             placeholder="S, M, L, XL or 30, 32, 34"
                             className="w-full bg-[var(--bg-surface)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
                           />
+                        </div>
+
+                        {/* Rich Textile & Material Narrative */}
+                        <div className="space-y-1 pt-1 border-t border-[var(--border-subtle)]">
+                          <label className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)] block">
+                            MATERIAL NARRATIVE & WEAVE DETAILS
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={piece.description || ''}
+                            onChange={(e) => handleUpdatePiece(idx, 'description', e.target.value)}
+                            placeholder="e.g. 420gsm Organic Raw Flax & Mulberry Silk Weft. Hand-sewn horn buttons with invisible blind stitching."
+                            className="w-full bg-[var(--bg-surface)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)] resize-none"
+                          />
+                        </div>
+
+                        {/* Curation Note & Styling Guidance */}
+                        <div className="space-y-1">
+                          <label className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)] block">
+                            CURATION & STYLING NOTE (ANI CHISOM DIRECTIVE)
+                          </label>
+                          <input
+                            type="text"
+                            value={piece.curationNote || ''}
+                            onChange={(e) => handleUpdatePiece(idx, 'curationNote', e.target.value)}
+                            placeholder="e.g. Cut with generous chest ease to allow dramatic, unstudied motion. Pair with open collar."
+                            className="w-full bg-[var(--bg-surface)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
+                          />
+                        </div>
+
+                        {/* Fit, Drape Weight & Model Specs */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-[var(--border-subtle)]">
+                          <div className="space-y-1">
+                            <label className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)] block">
+                              CUT / SILHOUETTE
+                            </label>
+                            <input
+                              type="text"
+                              value={piece.silhouette || ''}
+                              onChange={(e) => handleUpdatePiece(idx, 'silhouette', e.target.value)}
+                              placeholder="e.g. Fluid Architectural"
+                              className="w-full bg-[var(--bg-surface)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)] block">
+                              DRAPE WEIGHT & DENSITY
+                            </label>
+                            <input
+                              type="text"
+                              value={piece.drapeWeight || ''}
+                              onChange={(e) => handleUpdatePiece(idx, 'drapeWeight', e.target.value)}
+                              placeholder="e.g. 420gsm Heavyweight Archival"
+                              className="w-full bg-[var(--bg-surface)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)] block">
+                              MODEL SPECIFICATIONS
+                            </label>
+                            <input
+                              type="text"
+                              value={piece.modelStats || ''}
+                              onChange={(e) => handleUpdatePiece(idx, 'modelStats', e.target.value)}
+                              placeholder="e.g. Model is 188cm / 6ft 2in, wearing Size L"
+                              className="w-full bg-[var(--bg-surface)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}

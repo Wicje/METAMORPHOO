@@ -180,6 +180,38 @@ export async function POST(req: NextRequest) {
             extractText(props['Primary Piece']) ||
             extractText(props['Piece Name']) ||
             name;
+          const rawSizes1 = extractText(props['Primary Sizes'] || props['Sizes']);
+          const sizes1 = rawSizes1
+            ? rawSizes1.split(',').map((s) => s.trim()).filter(Boolean)
+            : ['S', 'M', 'L', 'XL'];
+          const cut1 =
+            extractText(props['Primary Cut'] || props['Cut'] || props['Silhouette']) ||
+            'Fluid Architectural';
+          const drape1 =
+            extractText(
+              props['Primary Drape'] ||
+                props['Drape Weight'] ||
+                props['Fabric Weight']
+            ) || 'Medium Drape (240-300gsm)';
+          const model1 =
+            extractText(
+              props['Primary Model'] ||
+                props['Model Stats'] ||
+                props['Model Specs']
+            ) || "Model is 188cm / 6'2\", wearing Size L for natural drop";
+          const desc1 =
+            extractText(
+              props['Primary Description'] ||
+                props['Description'] ||
+                props['Material Story'] ||
+                props['Fabric Details']
+            ) || 'Hand-sewn horn buttons with invisible blind stitching.';
+          const note1 =
+            extractText(
+              props['Primary Curation Note'] ||
+                props['Curation Note'] ||
+                props['Styling Note']
+            ) || 'Cut with generous chest ease to allow dramatic, unstudied motion.';
 
           items = [
             {
@@ -193,20 +225,17 @@ export async function POST(req: NextRequest) {
                 '420gsm Organic Raw Flax & Mulberry Silk',
               tier: tier === 'ARCHIVE' ? 'ARCHIVE' : 'EDIT',
               origin: 'Atelier Metamorphoo Certified Allocation',
-              silhouette: 'Fluid Architectural',
+              silhouette: cut1,
               image: heroImage,
-              sizes: ['S', 'M', 'L', 'XL'],
-              description:
-                extractText(props['Description']) ||
-                'Hand-sewn horn buttons with invisible blind stitching.',
-              curationNote:
-                'Cut with generous chest ease to allow dramatic, unstudied motion.',
+              sizes: sizes1,
+              description: desc1,
+              curationNote: note1,
               pinLocation: { x: 42, y: 35 },
               fitGuidance: {
-                cut: 'Fluid Architectural',
-                modelStats: "Model is 188cm / 6'2\", wearing Size L",
-                drapeWeight: 'Medium Drape (240-300gsm)',
-                recommendedSizing: 'True to size for relaxed silhouette.',
+                cut: cut1 as any,
+                modelStats: model1,
+                drapeWeight: drape1 as any,
+                recommendedSizing: 'True to size for intended architectural silhouette.',
               },
               provenance: {
                 condition: 'Atelier Curated Standard',
@@ -223,6 +252,20 @@ export async function POST(req: NextRequest) {
           // If a secondary piece is explicitly supplied in Notion, attach it as piece 2
           const secondaryPieceName = extractText(props['Secondary Piece']);
           if (secondaryPieceName && status !== 'directory_only') {
+            const rawSizes2 = extractText(props['Secondary Sizes']);
+            const sizes2 = rawSizes2
+              ? rawSizes2.split(',').map((s) => s.trim()).filter(Boolean)
+              : ['30', '32', '34', '36'];
+            const cut2 =
+              extractText(props['Secondary Cut'] || props['Secondary Silhouette']) ||
+              'Structured Tailored';
+            const drape2 =
+              extractText(props['Secondary Drape'] || props['Secondary Fabric Weight']) ||
+              'Substantial Drape (290gsm)';
+            const model2 =
+              extractText(props['Secondary Model'] || props['Secondary Model Stats']) ||
+              "Model is 188cm / 6'2\", wearing Size 32";
+
             items.push({
               id: `notion-item-${page.id}-2`,
               name: secondaryPieceName,
@@ -234,17 +277,20 @@ export async function POST(req: NextRequest) {
                 '290gsm High-Twist Tropical Wool',
               tier: tier === 'ARCHIVE' ? 'ARCHIVE' : 'EDIT',
               origin: 'Atelier Metamorphoo Certified Allocation',
-              silhouette: 'Structured Tailored',
+              silhouette: cut2,
               image: secondaryImage,
-              sizes: ['30', '32', '34', '36'],
-              description: 'Double reverse pleats, extended tab waistband.',
+              sizes: sizes2,
+              description:
+                extractText(props['Secondary Description']) ||
+                'Double reverse pleats, extended tab waistband.',
               curationNote:
+                extractText(props['Secondary Curation Note']) ||
                 'Engineered with clean drop to fall cleanly without synthetic stiffness.',
               pinLocation: { x: 50, y: 65 },
               fitGuidance: {
-                cut: 'Structured Tailored',
-                modelStats: "Model is 188cm / 6'2\", wearing Size 32",
-                drapeWeight: 'Substantial Drape (290gsm)',
+                cut: cut2 as any,
+                modelStats: model2,
+                drapeWeight: drape2 as any,
                 recommendedSizing: 'True to size.',
               },
               provenance: {

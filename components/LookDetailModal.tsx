@@ -427,13 +427,21 @@ export default function LookDetailModal({
                             className="object-cover"
                           />
                         </div>
-                        <div>
+                        <div className="flex-1 min-w-0 pr-2">
                           <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--color-sand)] block font-medium">
-                            {item.category} · {item.origin.split('/')[0]}
+                            {item.category} · {item.silhouette || 'Fluid Architectural'}
                           </span>
-                          <span className="font-cormorant text-base text-[var(--text-primary)] uppercase tracking-wide">
+                          <span className="font-cormorant text-base text-[var(--text-primary)] uppercase tracking-wide block truncate">
                             {item.name}
                           </span>
+                          <p className="font-montserrat text-[10px] text-[var(--text-secondary)] mt-0.5 truncate">
+                            {item.composition}
+                          </p>
+                          {item.sizes && item.sizes.length > 0 && (
+                            <span className="font-mono text-[9px] text-[var(--text-muted)] tracking-wider mt-1 block">
+                              SIZES: {item.sizes.join(' · ')}
+                            </span>
+                          )}
                         </div>
                       </div>
 

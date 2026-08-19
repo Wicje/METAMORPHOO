@@ -100,10 +100,19 @@ Using Notion allows Ani Chisom and the curation bureau to update prices, descrip
    * `Secondary Image` (URL / File)
    * `Primary Piece` (Text: e.g. *Unstructured Double-Breasted Trench*)
    * `Primary Piece Price` (Number: e.g. *680*)
-   * `Primary Composition` (Text: e.g. *420gsm Organic Raw Flax*)
+   * `Primary Composition` (Text: e.g. *420gsm Organic Raw Flax & Mulberry Silk Weft*)
+   * `Primary Sizes` (Text: e.g. *S, M, L, XL* or *30, 32, 34, 36* or *ONE SIZE*)
+   * `Primary Description` (Text: e.g. *Detailed weave story, unlined shoulder construction, hand-sewn horn buttons.*)
+   * `Primary Curation Note` (Text: e.g. *Ani Chisom styling note: Cut with generous chest ease for dramatic fluid motion.*)
+   * `Primary Cut` (Text: e.g. *Fluid Architectural* or *Structured Tailored*)
+   * `Primary Drape` (Text: e.g. *420gsm Heavyweight Archival* or *Medium Drape 280gsm*)
+   * `Primary Model Stats` (Text: e.g. *Model is 188cm / 6'2", wearing Size L for natural drop*)
    * `Secondary Piece` (Text: optional for full 2-piece looks)
    * `Secondary Piece Price` (Number: optional)
    * `Secondary Composition` (Text: optional)
+   * `Secondary Sizes` (Text: optional e.g. *30, 32, 34, 36*)
+   * `Secondary Description` (Text: optional)
+   * `Secondary Curation Note` (Text: optional)
    * `Status` (Select: *active*, *directory_only*, or *vaulted*)
    * `Drop Date` (Date / Text: optional e.g. *2026-10-01T18:00*)
    * `VIP Key` (Text: optional e.g. *MΦ-VIP-2026*)
@@ -111,11 +120,11 @@ Using Notion allows Ani Chisom and the curation bureau to update prices, descrip
 
 ### Example: How Your Notion Table Looks in Real Life
 
-| Look Name | Placement | Category | Hero Image | Primary Piece | Price | Composition | Where It Appears |
-|---|---|---|---|---|---|---|---|
-| **THE SOVEREIGN FLUIDITY** | `Wardrobe & Directory` | `Jacket` | `https://...` | Raw Flax Trench Coat | `680` | 420gsm Organic Raw Flax | **Both Runway & Directory** |
-| **VINTAGE DEADSTOCK SILK SHIRT** | `Directory Only` | `Shirt` | `https://...` | 1980s Sandwashed Silk Shirt | `290` | 100% Mulberry Silk | **Directory Only (No Runway)** |
-| **THE OBSIDIAN TUXEDO (SOLD)** | `Archive Vault` | `Jacket` | `https://...` | Smoked Wool Evening Robe | `920` | 320gsm High-Twist Wool | **Archive Vault Only** |
+| Look Name | Placement | Category | Hero Image | Primary Piece | Price | Composition | Sizes | Where It Appears |
+|---|---|---|---|---|---|---|---|---|
+| **THE SOVEREIGN FLUIDITY** | `Wardrobe & Directory` | `Jacket` | `https://...` | Raw Flax Trench Coat | `680` | 420gsm Organic Raw Flax | `S, M, L, XL` | **Both Runway & Directory** |
+| **VINTAGE DEADSTOCK SILK SHIRT** | `Directory Only` | `Shirt` | `https://...` | 1980s Sandwashed Silk Shirt | `290` | 100% Mulberry Silk | `S, M, L` | **Directory Only (No Runway)** |
+| **THE OBSIDIAN TUXEDO (SOLD)** | `Archive Vault` | `Jacket` | `https://...` | Smoked Wool Evening Robe | `920` | 320gsm High-Twist Wool | `38, 40, 42` | **Archive Vault Only** |
 
 ### Step 3: Grant Access to Your Database
 1. In your Notion database, click the **`•••`** menu (top right).
