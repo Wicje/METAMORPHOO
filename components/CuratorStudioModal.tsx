@@ -19,6 +19,7 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import Image from 'next/image';
+import EditorialImage from './EditorialImage';
 import { Look, Item } from '../lib/types';
 import { catalogStore, useCatalog } from '../lib/catalog-store';
 import { CURRENCIES, useCurrency } from '../lib/currency';
@@ -43,6 +44,7 @@ interface DraftPiece {
   description: string;
   curationNote: string;
   image: string;
+  pinLocation?: { x: number; y: number };
 }
 
 export default function CuratorStudioModal({
@@ -102,6 +104,13 @@ export default function CuratorStudioModal({
   const [longThesis, setLongThesis] = useState('');
   const [paletteDescription, setPaletteDescription] = useState('Warm Alabaster, Smoked Umber & Tuscan Terracotta');
   const [paletteColorsText, setPaletteColorsText] = useState('#E8E0D5, #1A1611, #C4623A, #C9B89A');
+  const [editionTotal, setEditionTotal] = useState<string>('');
+  const [isTimedDropEnabled, setIsTimedDropEnabled] = useState(false);
+  const [dropDateText, setDropDateText] = useState<string>('');
+  const [isVipLockEnabled, setIsVipLockEnabled] = useState(false);
+  const [vipPassword, setVipPassword] = useState<string>('');
+  const [activePinPieceIndex, setActivePinPieceIndex] = useState<number | null>(null);
+
   const [heroImage, setHeroImage] = useState(
     'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=1200&auto=format&fit=crop'
   );
@@ -124,6 +133,7 @@ export default function CuratorStudioModal({
       curationNote: 'Cut with generous chest ease to allow dramatic, unstudied motion in warm coastal air.',
       image:
         'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=1200&auto=format&fit=crop',
+      pinLocation: { x: 42, y: 35 },
     },
     {
       id: 'draft-p2',
@@ -137,6 +147,7 @@ export default function CuratorStudioModal({
       curationNote: 'Engineered with clean drop to fall cleanly without synthetic stiffness.',
       image:
         'https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=1200&auto=format&fit=crop',
+      pinLocation: { x: 50, y: 65 },
     },
   ]);
 
@@ -171,6 +182,7 @@ export default function CuratorStudioModal({
           apiKey: notionApiKey.trim(),
           databaseId: notionDbId.trim(),
           manualJsonText: rawNotionTableText.trim() || undefined,
+          manualCsvText: rawNotionTableText.trim() || undefined,
         }),
       });
 
@@ -333,7 +345,7 @@ Connect your database in Metamorphoo Atelier Studio by entering your Notion Data
       sizes: Array.isArray(p.sizes) ? p.sizes : ['S', 'M', 'L'],
       description: p.description || 'Mastercrafted garment for complete ensemble harmony.',
       curationNote: p.curationNote || 'Approved under Metamorphoo editorial standard.',
-      pinLocation: {
+      pinLocation: p.pinLocation || {
         x: 35 + ((idx * 20) % 40),
         y: 25 + ((idx * 25) % 50),
       },
@@ -365,7 +377,7 @@ Connect your database in Metamorphoo Atelier Studio by entering your Notion Data
       tier: 'EDIT',
       season: season.trim(),
       seasonCode: isArchivedSection ? 'ARCHIVE_VAULT' : 'SEASON_I',
-      status: 'active',
+      status: isArchivedSection ? 'vaulted' : 'active',
       oneRuleBroken: oneRuleBroken.trim() || 'Unstructured architectural ease with tailored rigor.',
       heroImage,
       galleryImages: [
@@ -381,6 +393,10 @@ Connect your database in Metamorphoo Atelier Studio by entering your Notion Data
         },
       ],
       items: validatedItems,
+      editionTotal: editionTotal ? Number(editionTotal) : undefined,
+      allocatedCount: 0,
+      dropTimestamp: isTimedDropEnabled && dropDateText ? new Date(dropDateText).getTime() : undefined,
+      vipPassword: isVipLockEnabled && vipPassword.trim() ? vipPassword.trim() : undefined,
     };
 
     catalogStore.addLook(newLook, isArchivedSection);
@@ -951,6 +967,105 @@ Connect your database in Metamorphoo Atelier Studio by entering your Notion Data
                     </div>
                   </div>
 
+                  {/* Drop Scheduling & VIP Exclusivity Parameters */}
+                  <div className="pt-4 border-t border-[var(--border-subtle)] space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-3">
+                      <div>
+                        <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)] block font-medium">
+                          DROP SCHEDULING & VIP ALLOCATION CONTROLS
+                        </span>
+                        <p className="font-montserrat text-[10px] text-[var(--text-muted)] mt-0.5">
+                          Optional: Toggle timed countdowns or password gates. Default is instant public availability.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Toggle 1: Timed Countdown Drop */}
+                      <div className="p-4 bg-[var(--bg-canvas)] border border-[var(--border-subtle)] space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-montserrat text-[9px] uppercase tracking-wider text-[var(--text-primary)] font-medium">
+                            TIMED COUNTDOWN DROP
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsTimedDropEnabled(!isTimedDropEnabled)}
+                            className={`px-2.5 py-1 text-[9px] font-montserrat uppercase tracking-wider transition-colors border ${
+                              isTimedDropEnabled
+                                ? 'bg-[var(--color-sand)] text-[var(--bg-canvas)] border-[var(--color-sand)] font-bold'
+                                : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-medium)] hover:text-[var(--text-primary)]'
+                            }`}
+                          >
+                            {isTimedDropEnabled ? 'COUNTDOWN ON' : 'OFF (IMMEDIATE)'}
+                          </button>
+                        </div>
+                        {isTimedDropEnabled && (
+                          <div className="pt-2 space-y-1">
+                            <label className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)] block">
+                              SCHEDULED DROP DATE & TIME *
+                            </label>
+                            <input
+                              type="datetime-local"
+                              required={isTimedDropEnabled}
+                              value={dropDateText}
+                              onChange={(e) => setDropDateText(e.target.value)}
+                              className="w-full bg-[var(--bg-surface)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Toggle 2: VIP Invitation Password Gate */}
+                      <div className="p-4 bg-[var(--bg-canvas)] border border-[var(--border-subtle)] space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-montserrat text-[9px] uppercase tracking-wider text-[var(--text-primary)] font-medium">
+                            VIP INVITATION LOCK
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsVipLockEnabled(!isVipLockEnabled)}
+                            className={`px-2.5 py-1 text-[9px] font-montserrat uppercase tracking-wider transition-colors border ${
+                              isVipLockEnabled
+                                ? 'bg-[var(--color-rust)] text-[#F5EFE4] border-[var(--color-rust)] font-bold'
+                                : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-medium)] hover:text-[var(--text-primary)]'
+                            }`}
+                          >
+                            {isVipLockEnabled ? 'VIP GATED ON' : 'OFF (PUBLIC)'}
+                          </button>
+                        </div>
+                        {isVipLockEnabled && (
+                          <div className="pt-2 space-y-1">
+                            <label className="font-montserrat text-[8px] uppercase tracking-widest text-[var(--text-muted)] block">
+                              VIP ALLOCATION KEY / PASSWORD *
+                            </label>
+                            <input
+                              type="text"
+                              required={isVipLockEnabled}
+                              value={vipPassword}
+                              onChange={(e) => setVipPassword(e.target.value)}
+                              placeholder="e.g. MΦ-INVITE-2026"
+                              className="w-full bg-[var(--bg-surface)] border border-[var(--border-medium)] px-3 py-2 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Numbered Edition Quantity Limit (Optional) */}
+                    <div className="space-y-1">
+                      <label className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)] block">
+                        NUMBERED EDITION QUANTITY LIMIT (OPTIONAL)
+                      </label>
+                      <input
+                        type="number"
+                        value={editionTotal}
+                        onChange={(e) => setEditionTotal(e.target.value)}
+                        placeholder="e.g. 50 (leave blank for standard atelier allocation)"
+                        className="w-full bg-[var(--bg-canvas)] border border-[var(--border-medium)] px-3 py-2.5 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
+                      />
+                    </div>
+                  </div>
+
                   {/* Imagery URLs */}
                   <div className="space-y-4 pt-2 border-t border-[var(--border-subtle)]">
                     <div className="space-y-1">
@@ -990,7 +1105,7 @@ Connect your database in Metamorphoo Atelier Studio by entering your Notion Data
                         ENSEMBLE PIECES ({pieces.length})
                       </span>
                       <h3 className="font-cormorant text-2xl text-[var(--text-primary)] uppercase tracking-wider">
-                        Garment Breakdown
+                        Garment Breakdown & Hotspots
                       </h3>
                     </div>
                     <button
@@ -1007,12 +1122,29 @@ Connect your database in Metamorphoo Atelier Studio by entering your Notion Data
                     {pieces.map((piece, idx) => (
                       <div
                         key={piece.id}
-                        className="p-4 bg-[var(--bg-canvas)] border border-[var(--border-subtle)] space-y-4 relative"
+                        className={`p-4 bg-[var(--bg-canvas)] border transition-colors space-y-4 relative ${
+                          activePinPieceIndex === idx
+                            ? 'border-[var(--color-sand)] ring-1 ring-[var(--color-sand)]'
+                            : 'border-[var(--border-subtle)]'
+                        }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--color-sand)]">
-                            PIECE 0{idx + 1}
-                          </span>
+                          <div className="flex items-center space-x-3">
+                            <span className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--color-sand)] font-medium">
+                              PIECE 0{idx + 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setActivePinPieceIndex(idx)}
+                              className={`text-[8px] font-montserrat uppercase tracking-widest px-2 py-0.5 border ${
+                                activePinPieceIndex === idx
+                                  ? 'bg-[var(--color-sand)] text-[var(--bg-canvas)] font-bold border-[var(--color-sand)]'
+                                  : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-subtle)] hover:text-[var(--text-primary)]'
+                              }`}
+                            >
+                              📍 PIN: ({piece.pinLocation?.x ?? 40}%, {piece.pinLocation?.y ?? 40}%) {activePinPieceIndex === idx ? '· ACTIVE (CLICK PHOTO)' : '· POSITION'}
+                            </button>
+                          </div>
                           {pieces.length > 1 && (
                             <button
                               type="button"
@@ -1145,25 +1277,37 @@ Connect your database in Metamorphoo Atelier Studio by entering your Notion Data
                 </button>
               </form>
 
-              {/* Live Preview Card (Right Column) */}
+              {/* Live Preview Card with Interactive Pin Placer (Right Column) */}
               <div className="space-y-6">
                 <div className="sticky top-24 space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)]">
-                      LIVE LOOKBOOK PREVIEW
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)] font-medium">
+                      VISUAL PIN PLACER & PREVIEW
                     </span>
-                    <Eye className="w-3.5 h-3.5 text-[var(--color-sand)]" />
+                    <span className="font-montserrat text-[9px] text-[var(--text-muted)]">
+                      {activePinPieceIndex !== null ? `Placing Piece 0${activePinPieceIndex + 1}` : 'Click to place'}
+                    </span>
                   </div>
 
                   <div className="bg-[var(--bg-surface)] border border-[var(--border-medium)] overflow-hidden shadow-2xl">
-                    <div className="relative aspect-[3/4] w-full bg-[var(--bg-canvas)]">
+                    <div
+                      onClick={(e) => {
+                        const targetIndex = activePinPieceIndex !== null ? activePinPieceIndex : 0;
+                        if (targetIndex >= pieces.length) return;
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const xPercent = Math.max(5, Math.min(95, Math.round(((e.clientX - rect.left) / rect.width) * 100)));
+                        const yPercent = Math.max(5, Math.min(95, Math.round(((e.clientY - rect.top) / rect.height) * 100)));
+                        handleUpdatePiece(targetIndex, 'pinLocation', { x: xPercent, y: yPercent });
+                      }}
+                      className="relative aspect-[3/4] w-full bg-[var(--bg-canvas)] cursor-crosshair group/canvas"
+                      title="Click anywhere to place garment hotspot pin"
+                    >
                       {heroImage ? (
-                        <Image
+                        <EditorialImage
                           src={heroImage}
                           alt="Look preview"
                           fill
                           className="object-cover"
-                          referrerPolicy="no-referrer"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)] text-xs">
@@ -1171,8 +1315,33 @@ Connect your database in Metamorphoo Atelier Studio by entering your Notion Data
                         </div>
                       )}
 
-                      <div className="absolute top-4 left-4 bg-[var(--bg-canvas)]/80 backdrop-blur-md px-3 py-1 border border-[var(--border-subtle)] text-[9px] font-montserrat uppercase tracking-[0.2em] text-[var(--text-primary)]">
-                        NEW LOOK
+                      {/* Visual Pins on Image */}
+                      {pieces.map((p, pIdx) => {
+                        const pin = p.pinLocation || { x: 35 + ((pIdx * 20) % 40), y: 25 + ((pIdx * 25) % 50) };
+                        const isActive = activePinPieceIndex === pIdx;
+                        return (
+                          <div
+                            key={p.id}
+                            style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActivePinPieceIndex(pIdx);
+                            }}
+                            className="absolute -translate-x-1/2 -translate-y-1/2 z-20"
+                          >
+                            <div className={`flex items-center justify-center w-6 h-6 rounded-full border text-[9px] font-mono font-bold shadow-lg transition-transform ${
+                              isActive
+                                ? 'bg-[var(--color-rust)] text-[#F5EFE4] border-[#F5EFE4] scale-125 ring-2 ring-[var(--color-sand)]'
+                                : 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-[var(--border-medium)] hover:scale-110'
+                            }`}>
+                              0{pIdx + 1}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      <div className="absolute top-4 left-4 bg-[var(--bg-canvas)]/90 backdrop-blur-md px-3 py-1 border border-[var(--border-subtle)] text-[9px] font-montserrat uppercase tracking-[0.2em] text-[var(--text-primary)]">
+                        CLICK IMAGE TO POSITION PIN
                       </div>
                     </div>
 

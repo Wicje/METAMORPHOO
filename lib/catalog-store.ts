@@ -59,13 +59,24 @@ export const catalogStore = {
   },
   updateLook(look: Look) {
     const current = catalogStore.getSnapshot();
-    const inLaunch = current.customLaunchLooks.some((l) => l.id === look.id);
-    if (inLaunch) {
-      const updated = current.customLaunchLooks.map((l) => (l.id === look.id ? look : l));
-      catalogStore.save({ ...current, customLaunchLooks: updated });
+    const isArchive = look.seasonCode === 'ARCHIVE_VAULT' || look.status === 'vaulted';
+    
+    // Remove from both lists first to clean up any category migration
+    const cleanLaunch = current.customLaunchLooks.filter((l) => l.id !== look.id);
+    const cleanArchive = current.customArchiveLooks.filter((l) => l.id !== look.id);
+
+    if (isArchive) {
+      catalogStore.save({
+        ...current,
+        customLaunchLooks: cleanLaunch,
+        customArchiveLooks: [look, ...cleanArchive],
+      });
     } else {
-      const updated = current.customArchiveLooks.map((l) => (l.id === look.id ? look : l));
-      catalogStore.save({ ...current, customArchiveLooks: updated });
+      catalogStore.save({
+        ...current,
+        customLaunchLooks: [look, ...cleanLaunch],
+        customArchiveLooks: cleanArchive,
+      });
     }
   },
   deleteLook(lookId: string) {

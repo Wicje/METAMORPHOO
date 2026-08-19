@@ -1,16 +1,26 @@
 'use client';
 
-import React, { useState } from 'react';
-import Image from 'next/image';
+import React, { useState, useEffect } from 'react';
+import EditorialImage from './EditorialImage';
 import { motion } from 'motion/react';
-import { ChevronDown, ArrowRight, Eye } from 'lucide-react';
+import { ChevronDown, ArrowRight, Eye, Lock, Clock } from 'lucide-react';
 import { Look, Item } from '../lib/types';
+import { useCurrentTime } from '../lib/time';
 
 interface WardrobeScrollProps {
   looks: Look[];
   onSelectLook: (look: Look) => void;
   onSelectItem: (item: Item, look: Look) => void;
   onShopFullLook: (look: Look) => void;
+}
+
+function formatCountdown(targetMs: number) {
+  const diff = targetMs - Date.now();
+  if (diff <= 0) return 'AVAILABLE NOW';
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  return `${days.toString().padStart(2, '0')}D : ${hours.toString().padStart(2, '0')}H : ${mins.toString().padStart(2, '0')}M`;
 }
 
 export default function WardrobeScroll({
@@ -20,6 +30,7 @@ export default function WardrobeScroll({
   onShopFullLook,
 }: WardrobeScrollProps) {
   const [activeLookIndex, setActiveLookIndex] = useState(0);
+  const currentTime = useCurrentTime();
 
   const scrollToLook = (index: number) => {
     const el = document.getElementById(`look-section-${index}`);
@@ -63,6 +74,7 @@ export default function WardrobeScroll({
 
       {/* Looks Full Bleed Viewports */}
       {looks.map((look, index) => {
+        const isFutureDrop = Boolean(look.dropTimestamp && look.dropTimestamp > currentTime);
         return (
           <section
             key={look.id}
@@ -72,13 +84,12 @@ export default function WardrobeScroll({
           >
             {/* Background Full-Bleed Editorial Image */}
             <div className="absolute inset-0 z-0">
-              <Image
+              <EditorialImage
                 src={look.heroImage}
                 alt={look.name}
                 fill
                 priority={index === 0}
                 className="object-cover object-center transform scale-100 transition-transform duration-1000 ease-out"
-                referrerPolicy="no-referrer"
               />
               {/* Cinematic Vignette / Deep Anchor ground gradient */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#1A1611]/90 via-[#1A1611]/45 to-[#1A1611]/50" />
@@ -94,6 +105,18 @@ export default function WardrobeScroll({
               <span className="font-montserrat text-[9px] sm:text-[10px] tracking-[0.2em] text-[#E8E0D5]/60 uppercase">
                 {look.subName || `Look 0${index + 1}`}
               </span>
+              {isFutureDrop && (
+                <span className="hidden sm:inline-flex items-center space-x-1.5 font-montserrat text-[8px] uppercase tracking-[0.25em] text-[#F5EFE4] bg-[#C4623A] px-2 py-0.5">
+                  <Clock className="w-2.5 h-2.5" />
+                  <span>DROPPING IN {formatCountdown(look.dropTimestamp!)}</span>
+                </span>
+              )}
+              {look.vipPassword && (
+                <span className="hidden sm:inline-flex items-center space-x-1 font-montserrat text-[8px] uppercase tracking-[0.2em] text-[#C9B89A] bg-[#1A1611]/80 px-2 py-0.5 border border-[#C9B89A]/30">
+                  <Lock className="w-2.5 h-2.5" />
+                  <span>VIP ALLOCATION</span>
+                </span>
+              )}
             </div>
 
             {/* MΦ Monogram at bottom right */}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
+import EditorialImage from './EditorialImage';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
@@ -12,6 +12,7 @@ import {
   FileBadge,
   Bookmark,
   BookmarkCheck,
+  ZoomIn,
 } from 'lucide-react';
 import { Item, Look } from '../lib/types';
 import { CURRENCIES, useCurrency } from '../lib/currency';
@@ -35,6 +36,14 @@ export default function ItemDetailModal({
   const [selectedSize, setSelectedSize] = useState<string>(item?.sizes[0] || 'Standard');
   const [added, setAdded] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'fit' | 'provenance'>('details');
+  const [isLoupeEnabled, setIsLoupeEnabled] = useState(false);
+  const [loupePos, setLoupePos] = useState<{ isHovering: boolean; x: number; y: number; px: number; py: number }>({
+    isHovering: false,
+    x: 0,
+    y: 0,
+    px: 50,
+    py: 50,
+  });
 
   const currency = useCurrency();
   const ledger = useLedger();
@@ -53,6 +62,15 @@ export default function ItemDetailModal({
 
   const handleToggleSave = () => {
     ledgerStore.toggleSaveItem(item.id, originatingLook?.id || 'general', originatingLook?.name || 'Metamorphoo Edit');
+  };
+
+  const handleMouseMoveLoupe = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const px = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    const py = Math.max(0, Math.min(100, (y / rect.height) * 100));
+    setLoupePos({ isHovering: true, x, y, px, py });
   };
 
   const isVaulted = originatingLook?.status === 'vaulted';
@@ -119,16 +137,43 @@ export default function ItemDetailModal({
         {/* Garment Showcase */}
         <div className="max-w-6xl mx-auto px-6 sm:px-12 py-6 sm:py-12">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-start">
-            {/* Left: Clean Editorial Image */}
-            <div className="md:col-span-6 relative aspect-[3/4] bg-[var(--bg-surface)] overflow-hidden sticky top-28 border border-[var(--border-subtle)]">
-              <Image
+            {/* Left: Clean Editorial Image with Texture Loupe */}
+            <div
+              className="md:col-span-6 relative aspect-[3/4] bg-[var(--bg-surface)] overflow-hidden sticky top-28 border border-[var(--border-subtle)] group/item-stage"
+              onMouseMove={isLoupeEnabled ? handleMouseMoveLoupe : undefined}
+              onMouseLeave={() => setLoupePos((prev) => ({ ...prev, isHovering: false }))}
+            >
+              <EditorialImage
                 src={item.image}
                 alt={item.name}
                 fill
                 priority
                 className="object-cover object-center"
-                referrerPolicy="no-referrer"
               />
+
+              {/* Tactile Texture Loupe Magnifying Lens */}
+              {isLoupeEnabled && loupePos.isHovering && (
+                <div
+                  style={{
+                    left: `${loupePos.x}px`,
+                    top: `${loupePos.y}px`,
+                  }}
+                  className="absolute w-44 h-44 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[var(--color-sand)] shadow-2xl overflow-hidden pointer-events-none z-30 hidden md:block bg-[var(--bg-surface)]"
+                >
+                  <div
+                    style={{
+                      backgroundImage: `url(${item.image})`,
+                      backgroundPosition: `${loupePos.px}% ${loupePos.py}%`,
+                      backgroundSize: '300%',
+                      backgroundRepeat: 'no-repeat',
+                    }}
+                    className="w-full h-full"
+                  />
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 font-montserrat text-[7px] uppercase tracking-[0.2em] bg-[var(--bg-surface)]/90 px-1.5 py-0.5 text-[var(--color-sand)] whitespace-nowrap border border-[var(--border-subtle)]">
+                    3.0X MACRO WEAVE
+                  </div>
+                </div>
+              )}
 
               {/* Status or Tier Badge */}
               <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5">
@@ -146,6 +191,22 @@ export default function ItemDetailModal({
                     VAULTED EDITION
                   </span>
                 )}
+              </div>
+
+              {/* Loupe Toggle Button */}
+              <div className="absolute top-4 right-4 z-10 hidden md:block">
+                <button
+                  onClick={() => setIsLoupeEnabled(!isLoupeEnabled)}
+                  className={`px-2.5 py-1 text-[9px] font-montserrat uppercase tracking-[0.2em] flex items-center space-x-1.5 transition-all border ${
+                    isLoupeEnabled
+                      ? 'bg-[var(--color-sand)] text-[var(--bg-canvas)] border-[var(--color-sand)] font-medium'
+                      : 'bg-[var(--bg-surface)]/90 text-[var(--text-secondary)] border-[var(--border-subtle)] hover:text-[var(--text-primary)]'
+                  }`}
+                  title="Toggle high-magnification macro fabric grain loupe"
+                >
+                  <ZoomIn className="w-3 h-3" />
+                  <span>{isLoupeEnabled ? 'LOUPE ACTIVE' : 'TACTILE LOUPE'}</span>
+                </button>
               </div>
             </div>
 

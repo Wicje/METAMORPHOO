@@ -49,12 +49,48 @@ export async function POST(req: NextRequest) {
 
     allocationsLedger.unshift(record);
 
+    // Optional Real Email Dispatch via Resend or Mail Webhook if configured
+    let emailDispatched = false;
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const notifyEmail = process.env.NEXT_PUBLIC_CONCIERGE_EMAIL || 'concierge@metamorphoo.com';
+
+    if (resendApiKey) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'METAMORPHOO Concierge <concierge@metamorphoo.com>',
+            to: [notifyEmail],
+            subject: `NEW ALLOCATION REQUEST — ${record.reference} (${record.clientName})`,
+            html: `
+              <h2>METAMORPHOO PRIVATE SARTORIAL ALLOCATION</h2>
+              <p><strong>Reference:</strong> ${record.reference}</p>
+              <p><strong>Client:</strong> ${record.clientName} (${record.clientEmail} | ${record.clientPhone})</p>
+              <p><strong>Destination:</strong> ${record.clientAddress}</p>
+              <p><strong>Total:</strong> ${record.formattedTotal}</p>
+              <h3>Requested Manifest:</h3>
+              <ul>${record.itemsSummary.map((item) => `<li>${item}</li>`).join('')}</ul>
+              ${record.notes ? `<p><strong>Notes:</strong> ${record.notes}</p>` : ''}
+            `,
+          }),
+        });
+        emailDispatched = true;
+      } catch (e) {
+        console.warn('Failed to send Resend email notification', e);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Allocation request logged in Atelier registry',
       recordId: record.id,
       reference: record.reference,
       timestamp: record.timestamp,
+      emailDispatched,
     });
   } catch (error: any) {
     console.error('Error logging concierge allocation:', error);

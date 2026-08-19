@@ -44,12 +44,44 @@ export async function POST(req: NextRequest) {
 
     waitlistLedger.unshift(record);
 
+    let emailDispatched = false;
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const notifyEmail = process.env.NEXT_PUBLIC_CONCIERGE_EMAIL || 'concierge@metamorphoo.com';
+
+    if (resendApiKey) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'METAMORPHOO Concierge <concierge@metamorphoo.com>',
+            to: [notifyEmail, record.email],
+            subject: `MΦ ORIGINALS PRIORITY REGISTRATION — ${record.id}`,
+            html: `
+              <h2>METAMORPHOO ORIGINALS PRIORITY REGISTRATION</h2>
+              <p>Registration No: <strong>${record.id}</strong></p>
+              <p>Client Email: ${record.email}</p>
+              <p>Registered Source: ${record.source}</p>
+              <p>Priority access window details will be dispatched prior to public drop.</p>
+            `,
+          }),
+        });
+        emailDispatched = true;
+      } catch (e) {
+        console.warn('Failed to send Resend waitlist email notification', e);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       alreadyRegistered: false,
       message: 'Successfully registered in the numbered Originals allocation registry',
       id: record.id,
       timestamp: record.timestamp,
+      emailDispatched,
     });
   } catch (error: any) {
     console.error('Error logging waitlist entry:', error);

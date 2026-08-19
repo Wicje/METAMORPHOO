@@ -53,8 +53,10 @@ function extractUrlOrImage(prop?: NotionPropertyRichText): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { apiKey, databaseId, manualCsvText, manualJsonText } = body;
+    const body = await req.json().catch(() => ({}));
+    const apiKey = body.apiKey || process.env.NOTION_API_KEY || '';
+    const databaseId = body.databaseId || process.env.NOTION_DATABASE_ID || '';
+    const { manualCsvText, manualJsonText } = body;
 
     // 1. Direct Notion API fetch if apiKey & databaseId provided
     if (apiKey && databaseId) {
@@ -116,14 +118,31 @@ export async function POST(req: NextRequest) {
         const oneRuleBroken =
           extractText(props['One Rule Broken']) ||
           'Unstructured architectural ease with tailored rigor.';
-        const status =
-          extractText(props['Status']).toLowerCase() === 'vaulted'
-            ? 'vaulted'
-            : 'active';
-        const isArchive =
-          extractText(props['Archive']).toLowerCase() === 'true' ||
-          status === 'vaulted' ||
-          extractText(props['Vault']).toLowerCase() === 'true';
+        const rawPlacement = (
+          extractText(props['Placement']) ||
+          extractText(props['Display']) ||
+          extractText(props['Section']) ||
+          ''
+        ).toLowerCase();
+        const rawStatus = (extractText(props['Status']) || '').toLowerCase();
+
+        let status: 'active' | 'vaulted' | 'directory_only' = 'active';
+        if (
+          rawStatus === 'vaulted' ||
+          rawPlacement.includes('vault') ||
+          rawPlacement.includes('archive') ||
+          extractText(props['Archive']).toLowerCase() === 'true'
+        ) {
+          status = 'vaulted';
+        } else if (
+          rawPlacement.includes('directory') ||
+          rawStatus === 'directory_only' ||
+          rawPlacement.includes('standalone')
+        ) {
+          status = 'directory_only';
+        }
+
+        const isArchive = status === 'vaulted';
 
         const heroImage =
           extractUrlOrImage(props['Hero Image']) ||
@@ -149,26 +168,39 @@ export async function POST(req: NextRequest) {
 
         if (!items || items.length === 0) {
           // Build standard default pieces if not explicitly supplied as JSON
-          const defaultPrice1 = extractNumber(props['Primary Piece Price'], 680);
-          const defaultPrice2 = extractNumber(props['Secondary Piece Price'], 340);
-          const defaultPieceName1 = extractText(props['Primary Piece']) || `${name} Primary Robe / Outerwear`;
-          const defaultPieceName2 = extractText(props['Secondary Piece']) || `${name} Tailored Trouser`;
+          const defaultCategory1 =
+            extractText(props['Category']) ||
+            extractText(props['Primary Category']) ||
+            'Jacket';
+          const defaultPrice1 = extractNumber(
+            props['Primary Piece Price'] || props['Price'],
+            450
+          );
+          const defaultPieceName1 =
+            extractText(props['Primary Piece']) ||
+            extractText(props['Piece Name']) ||
+            name;
 
           items = [
             {
               id: `notion-item-${page.id}-1`,
               name: defaultPieceName1,
-              category: 'Jacket',
+              category: defaultCategory1 as any,
               price: defaultPrice1,
               currency: 'USD',
-              composition: extractText(props['Primary Composition']) || '420gsm Organic Raw Flax & Mulberry Silk',
+              composition:
+                extractText(props['Primary Composition'] || props['Composition']) ||
+                '420gsm Organic Raw Flax & Mulberry Silk',
               tier: tier === 'ARCHIVE' ? 'ARCHIVE' : 'EDIT',
               origin: 'Atelier Metamorphoo Certified Allocation',
               silhouette: 'Fluid Architectural',
               image: heroImage,
               sizes: ['S', 'M', 'L', 'XL'],
-              description: 'Hand-sewn horn buttons with invisible blind stitching.',
-              curationNote: 'Cut with generous chest ease to allow dramatic, unstudied motion.',
+              description:
+                extractText(props['Description']) ||
+                'Hand-sewn horn buttons with invisible blind stitching.',
+              curationNote:
+                'Cut with generous chest ease to allow dramatic, unstudied motion.',
               pinLocation: { x: 42, y: 35 },
               fitGuidance: {
                 cut: 'Fluid Architectural',
@@ -179,25 +211,35 @@ export async function POST(req: NextRequest) {
               provenance: {
                 condition: 'Atelier Curated Standard',
                 inspectionBy: 'Ani Chisom & Curatorial Bureau',
-                authenticationStandard: '100% Natural Fibre Integrity · Zero Synthetic Tension',
-                packaging: 'Archival Breathable Cotton Travel Garment Case + Cedar Block',
+                authenticationStandard:
+                  '100% Natural Fibre Integrity · Zero Synthetic Tension',
+                packaging:
+                  'Archival Breathable Cotton Travel Garment Case + Cedar Block',
               },
               isAvailable: true,
             },
-            {
+          ];
+
+          // If a secondary piece is explicitly supplied in Notion, attach it as piece 2
+          const secondaryPieceName = extractText(props['Secondary Piece']);
+          if (secondaryPieceName && status !== 'directory_only') {
+            items.push({
               id: `notion-item-${page.id}-2`,
-              name: defaultPieceName2,
-              category: 'Trousers',
-              price: defaultPrice2,
+              name: secondaryPieceName,
+              category: (extractText(props['Secondary Category']) || 'Trousers') as any,
+              price: extractNumber(props['Secondary Piece Price'], 340),
               currency: 'USD',
-              composition: extractText(props['Secondary Composition']) || '290gsm High-Twist Tropical Wool',
+              composition:
+                extractText(props['Secondary Composition']) ||
+                '290gsm High-Twist Tropical Wool',
               tier: tier === 'ARCHIVE' ? 'ARCHIVE' : 'EDIT',
               origin: 'Atelier Metamorphoo Certified Allocation',
               silhouette: 'Structured Tailored',
               image: secondaryImage,
               sizes: ['30', '32', '34', '36'],
               description: 'Double reverse pleats, extended tab waistband.',
-              curationNote: 'Engineered with clean drop to fall cleanly without synthetic stiffness.',
+              curationNote:
+                'Engineered with clean drop to fall cleanly without synthetic stiffness.',
               pinLocation: { x: 50, y: 65 },
               fitGuidance: {
                 cut: 'Structured Tailored',
@@ -212,8 +254,8 @@ export async function POST(req: NextRequest) {
                 packaging: 'Archival Garment Case',
               },
               isAvailable: true,
-            },
-          ];
+            });
+          }
         }
 
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -241,6 +283,10 @@ export async function POST(req: NextRequest) {
           ],
           items,
           isArchive,
+          editionTotal: extractNumber(props['Edition Total'] || props['Edition Limit'] || props['Quantity Limit'], 0) || undefined,
+          allocatedCount: 0,
+          dropTimestamp: extractText(props['Drop Date'] || props['Drop Timestamp']) ? new Date(extractText(props['Drop Date'] || props['Drop Timestamp'])).getTime() : undefined,
+          vipPassword: extractText(props['VIP Key'] || props['VIP Password'] || props['Invitation Key']) || undefined,
         };
       });
 
@@ -253,20 +299,160 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Manual CSV / JSON Parse
-    if (manualJsonText) {
-      const parsed = JSON.parse(manualJsonText);
-      const looks = Array.isArray(parsed) ? parsed : parsed.looks || parsed.launchLooks || [];
-      return NextResponse.json({
-        success: true,
-        source: 'manual_json',
-        totalSynced: looks.length,
-        looks,
-      });
+    const rawText = (manualCsvText || manualJsonText || '').trim();
+
+    if (rawText) {
+      // Check if rawText is JSON
+      if (rawText.startsWith('{') || rawText.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(rawText);
+          const looks = Array.isArray(parsed) ? parsed : parsed.looks || parsed.launchLooks || [];
+          return NextResponse.json({
+            success: true,
+            source: 'manual_json',
+            totalSynced: looks.length,
+            looks,
+          });
+        } catch {
+          // fallback to CSV if JSON parse fails
+        }
+      }
+
+      // Parse as CSV
+      const lines = rawText.split(/\r?\n/).filter((l: string) => l.trim().length > 0);
+      if (lines.length > 1) {
+        const parseCsvLine = (line: string): string[] => {
+          const res: string[] = [];
+          let cur = '';
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              if (inQuotes && line[i + 1] === '"') {
+                cur += '"';
+                i++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              res.push(cur.trim());
+              cur = '';
+            } else {
+              cur += char;
+            }
+          }
+          res.push(cur.trim());
+          return res;
+        };
+
+        const headers = parseCsvLine(lines[0]).map((h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+        const getCol = (row: string[], nameKeywords: string[], fallback = '') => {
+          for (let idx = 0; idx < headers.length; idx++) {
+            const h = headers[idx];
+            if (nameKeywords.some((kw) => h.includes(kw))) {
+              return row[idx] || fallback;
+            }
+          }
+          return fallback;
+        };
+
+        const parsedCsvLooks = lines.slice(1).map((line: string, idx: number) => {
+          const cols = parseCsvLine(line);
+          const name = getCol(cols, ['lookname', 'name', 'title'], `LOOK 0${idx + 1}`);
+          const season = getCol(cols, ['season'], 'Season I: The Inaugural Wardrobe');
+          const tier = getCol(cols, ['tier'], 'EDIT').toUpperCase();
+          const occasion = getCol(cols, ['occasion'], 'Trans-continental Transit / Embassy Salon');
+          const quote = getCol(cols, ['statementquote', 'quote'], 'A complete decision in raw unbleached natural cloth.');
+          const thesis = getCol(cols, ['thesis', 'description'], 'Formulated under Metamorphoo curatorial discipline.');
+          const rule = getCol(cols, ['onerulebroken', 'rule'], 'Unstructured architectural ease with tailored rigor.');
+          const status = getCol(cols, ['status'], 'Active').toLowerCase() === 'vaulted' ? 'vaulted' : 'active';
+          const isArchive = getCol(cols, ['archive', 'vault'], 'false').toLowerCase() === 'true' || status === 'vaulted';
+
+          const heroImage = getCol(cols, ['heroimage', 'image', 'cover'], 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=1200&auto=format&fit=crop');
+          const secondaryImage = getCol(cols, ['secondaryimage', 'detailimage'], heroImage);
+
+          const p1Name = getCol(cols, ['primarypiece', 'piece1'], `${name} Primary Garment`);
+          const p1Price = parseFloat(getCol(cols, ['primarypieceprice', 'price1'], '680')) || 680;
+          const p1Comp = getCol(cols, ['primarycomposition', 'comp1'], '420gsm Organic Raw Flax & Mulberry Silk');
+
+          const p2Name = getCol(cols, ['secondarypiece', 'piece2'], `${name} Tailored Trouser`);
+          const p2Price = parseFloat(getCol(cols, ['secondarypieceprice', 'price2'], '340')) || 340;
+          const p2Comp = getCol(cols, ['secondarycomposition', 'comp2'], '290gsm High-Twist Tropical Wool');
+
+          const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+          return {
+            id: `csv-look-${idx + 1}-${Date.now()}`,
+            slug,
+            name: name.toUpperCase(),
+            subName: 'THE SARTORIAL COMPOSITION',
+            occasion,
+            paletteDescription: 'Warm Alabaster, Smoked Umber & Tuscan Terracotta',
+            paletteColors: ['#E8E0D5', '#1A1611', '#C4623A'],
+            statementQuote: quote,
+            longThesis: thesis,
+            tier: (tier === 'ARCHIVE' ? 'EDIT' : tier) as any,
+            season,
+            seasonCode: isArchive ? 'ARCHIVE_VAULT' : 'SEASON_I',
+            status: status as any,
+            oneRuleBroken: rule,
+            heroImage,
+            galleryImages: [
+              { url: heroImage, caption: `${name} — Editorial portrait`, type: 'full' as const },
+              { url: secondaryImage, caption: `${name} — Tactile angle`, type: 'second_angle' as const },
+            ],
+            items: [
+              {
+                id: `csv-item-${idx + 1}-1`,
+                name: p1Name,
+                category: 'Jacket' as const,
+                price: p1Price,
+                currency: 'USD',
+                composition: p1Comp,
+                tier: 'EDIT' as const,
+                origin: 'Atelier Metamorphoo Certified Allocation',
+                silhouette: 'Fluid Architectural',
+                image: heroImage,
+                sizes: ['S', 'M', 'L', 'XL'],
+                description: 'Hand-sewn horn buttons with invisible blind stitching.',
+                curationNote: 'Cut with generous chest ease to allow dramatic, unstudied motion.',
+                pinLocation: { x: 42, y: 35 },
+                isAvailable: true,
+              },
+              {
+                id: `csv-item-${idx + 1}-2`,
+                name: p2Name,
+                category: 'Trousers' as const,
+                price: p2Price,
+                currency: 'USD',
+                composition: p2Comp,
+                tier: 'EDIT' as const,
+                origin: 'Atelier Metamorphoo Certified Allocation',
+                silhouette: 'Structured Tailored',
+                image: secondaryImage,
+                sizes: ['30', '32', '34', '36'],
+                description: 'Double reverse pleats, extended tab waistband.',
+                curationNote: 'Engineered with clean drop to fall cleanly without synthetic stiffness.',
+                pinLocation: { x: 50, y: 65 },
+                isAvailable: true,
+              },
+            ],
+            isArchive,
+          };
+        });
+
+        return NextResponse.json({
+          success: true,
+          source: 'manual_csv',
+          totalSynced: parsedCsvLooks.length,
+          looks: parsedCsvLooks,
+        });
+      }
     }
 
     return NextResponse.json(
       {
-        error: 'Missing Notion credentials (apiKey & databaseId) or raw table payload.',
+        error: 'Missing Notion credentials (apiKey & databaseId) or raw table payload (CSV/JSON).',
       },
       { status: 400 }
     );
@@ -279,4 +465,24 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function GET() {
+  const apiKey = process.env.NOTION_API_KEY;
+  const databaseId = process.env.NOTION_DATABASE_ID;
+
+  if (!apiKey || !databaseId) {
+    return NextResponse.json({
+      configured: false,
+      message: 'Notion environment variables (NOTION_API_KEY, NOTION_DATABASE_ID) not configured on server.',
+    });
+  }
+
+  // Trigger server-side fetch with env credentials
+  return POST(
+    new NextRequest('https://metamorphoo.com/api/notion/sync', {
+      method: 'POST',
+      body: JSON.stringify({ apiKey, databaseId }),
+    })
+  );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
+import EditorialImage from './EditorialImage';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
@@ -12,10 +12,14 @@ import {
   BookmarkCheck,
   Share2,
   Archive,
+  ZoomIn,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { Look, Item } from '../lib/types';
 import { CURRENCIES, useCurrency } from '../lib/currency';
 import { ledgerStore, useLedger } from '../lib/ledger-store';
+import { useCurrentTime } from '../lib/time';
 
 interface LookDetailModalProps {
   look: Look | null;
@@ -34,12 +38,36 @@ export default function LookDetailModal({
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const [fullLookAdded, setFullLookAdded] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isLoupeEnabled, setIsLoupeEnabled] = useState(false);
+  const [loupePos, setLoupePos] = useState<{ isHovering: boolean; x: number; y: number; px: number; py: number }>({
+    isHovering: false,
+    x: 0,
+    y: 0,
+    px: 50,
+    py: 50,
+  });
+  const [enteredVipKey, setEnteredVipKey] = useState('');
+  const [isVipUnlocked, setIsVipUnlocked] = useState(false);
+  const [vipKeyError, setVipKeyError] = useState(false);
+  const currentTime = useCurrentTime();
 
   const currency = useCurrency();
   const ledger = useLedger();
   const isSaved = look ? ledger.savedLooks.some((l) => l.lookId === look.id) : false;
 
   if (!look) return null;
+
+  const isDropLocked = Boolean(look.vipPassword && !isVipUnlocked && look.dropTimestamp && currentTime > 0 && look.dropTimestamp > currentTime);
+
+  const handleUnlockVip = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (look.vipPassword && enteredVipKey.trim().toLowerCase() === look.vipPassword.trim().toLowerCase()) {
+      setIsVipUnlocked(true);
+      setVipKeyError(false);
+    } else {
+      setVipKeyError(true);
+    }
+  };
 
   const currentCurrencyConfig = CURRENCIES[currency] || CURRENCIES.USD;
   const totalLookPriceUSD = look.items.reduce((sum, it) => sum + it.price, 0);
@@ -48,7 +76,7 @@ export default function LookDetailModal({
   const isVaulted = look.status === 'vaulted';
 
   const handleAddFullLook = () => {
-    if (isVaulted) return;
+    if (isVaulted || isDropLocked) return;
     onShopFullLook(look);
     setFullLookAdded(true);
     setTimeout(() => setFullLookAdded(false), 3000);
@@ -65,6 +93,15 @@ export default function LookDetailModal({
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
     }
+  };
+
+  const handleMouseMoveLoupe = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const px = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    const py = Math.max(0, Math.min(100, (y / rect.height) * 100));
+    setLoupePos({ isHovering: true, x, y, px, py });
   };
 
   const images = [
@@ -140,19 +177,46 @@ export default function LookDetailModal({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
             {/* Left: Multi-Image Editorial Gallery with Interactive Pins */}
             <div className="lg:col-span-7 space-y-6">
-              {/* Main Display Stage */}
-              <div className="relative aspect-[3/4] w-full bg-[var(--bg-surface)] overflow-hidden border border-[var(--border-subtle)]">
-                <Image
+              {/* Main Display Stage with Texture Loupe & Interactive Pins */}
+              <div
+                className="relative aspect-[3/4] w-full bg-[var(--bg-surface)] overflow-hidden border border-[var(--border-subtle)] group/stage"
+                onMouseMove={isLoupeEnabled ? handleMouseMoveLoupe : undefined}
+                onMouseLeave={() => setLoupePos((prev) => ({ ...prev, isHovering: false }))}
+              >
+                <EditorialImage
                   src={images[activeImageIndex]?.url || look.heroImage}
                   alt={look.name}
                   fill
                   priority
                   className="object-cover object-center transition-all duration-700"
-                  referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-canvas)]/40 via-transparent to-[var(--bg-canvas)]/10 pointer-events-none" />
 
-                {/* EDIT or VAULTED mark */}
+                {/* Tactile Texture Loupe Magnifying Lens */}
+                {isLoupeEnabled && loupePos.isHovering && (
+                  <div
+                    style={{
+                      left: `${loupePos.x}px`,
+                      top: `${loupePos.y}px`,
+                    }}
+                    className="absolute w-44 h-44 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[var(--color-sand)] shadow-2xl overflow-hidden pointer-events-none z-30 hidden md:block bg-[var(--bg-surface)]"
+                  >
+                    <div
+                      style={{
+                        backgroundImage: `url(${images[activeImageIndex]?.url || look.heroImage})`,
+                        backgroundPosition: `${loupePos.px}% ${loupePos.py}%`,
+                        backgroundSize: '300%',
+                        backgroundRepeat: 'no-repeat',
+                      }}
+                      className="w-full h-full"
+                    />
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 font-montserrat text-[7px] uppercase tracking-[0.2em] bg-[var(--bg-surface)]/90 px-1.5 py-0.5 text-[var(--color-sand)] whitespace-nowrap border border-[var(--border-subtle)]">
+                      3.0X MACRO WEAVE
+                    </div>
+                  </div>
+                )}
+
+                {/* EDIT or VAULTED or VIP LOCKED mark */}
                 <div className="absolute top-4 left-4 z-10 flex items-center space-x-2">
                   <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-sand)] bg-[var(--bg-surface)]/90 px-2.5 py-1 backdrop-blur-sm border border-[var(--border-subtle)] font-medium">
                     {look.tier}
@@ -163,15 +227,37 @@ export default function LookDetailModal({
                       <span>VAULTED EDITION</span>
                     </span>
                   )}
-                  {look.status === 'low_stock' && (
+                  {isDropLocked && (
+                    <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[#F5EFE4] bg-[var(--color-rust)] px-2.5 py-1 flex items-center space-x-1 font-medium">
+                      <Lock className="w-3 h-3" />
+                      <span>VIP PRIVATE ALLOCATION</span>
+                    </span>
+                  )}
+                  {look.status === 'low_stock' && !isVaulted && (
                     <span className="font-montserrat text-[9px] uppercase tracking-[0.25em] text-[var(--color-rust)] bg-[var(--bg-surface)]/90 px-2 py-0.5 border border-[var(--color-rust)]/40">
                       FINAL ALLOCATIONS
                     </span>
                   )}
                 </div>
 
-                {/* Interactive Item Pins (Only on Hero image) */}
-                {activeImageIndex === 0 && (
+                {/* Texture Loupe Toggle Trigger */}
+                <div className="absolute top-4 right-4 z-10 hidden md:block">
+                  <button
+                    onClick={() => setIsLoupeEnabled(!isLoupeEnabled)}
+                    className={`px-2.5 py-1 text-[9px] font-montserrat uppercase tracking-[0.2em] flex items-center space-x-1.5 transition-all border ${
+                      isLoupeEnabled
+                        ? 'bg-[var(--color-sand)] text-[var(--bg-canvas)] border-[var(--color-sand)] font-medium'
+                        : 'bg-[var(--bg-surface)]/90 text-[var(--text-secondary)] border-[var(--border-subtle)] hover:text-[var(--text-primary)]'
+                    }`}
+                    title="Toggle high-magnification macro fabric grain loupe"
+                  >
+                    <ZoomIn className="w-3 h-3" />
+                    <span>{isLoupeEnabled ? 'LOUPE ACTIVE' : 'TACTILE LOUPE'}</span>
+                  </button>
+                </div>
+
+                {/* Interactive Item Pins (Only on Hero image and when loupe is off) */}
+                {activeImageIndex === 0 && !isLoupeEnabled && (
                   <div className="absolute inset-0 pointer-events-none">
                     {look.items.map((item) => {
                       const isHovered = hoveredItemId === item.id;
@@ -245,12 +331,11 @@ export default function LookDetailModal({
                           : 'border-transparent opacity-60 hover:opacity-100'
                       }`}
                     >
-                      <Image
+                      <EditorialImage
                         src={img.url}
                         alt={img.caption}
                         fill
                         className="object-cover object-center"
-                        referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-[var(--bg-canvas)]/20" />
                     </button>
@@ -335,12 +420,11 @@ export default function LookDetailModal({
                     >
                       <div className="flex items-center space-x-3.5">
                         <div className="relative w-11 h-14 bg-[var(--bg-canvas)] flex-shrink-0 overflow-hidden border border-[var(--border-subtle)]">
-                          <Image
+                          <EditorialImage
                             src={item.image}
                             alt={item.name}
                             fill
                             className="object-cover"
-                            referrerPolicy="no-referrer"
                           />
                         </div>
                         <div>
@@ -380,7 +464,42 @@ export default function LookDetailModal({
                   </span>
                 </div>
 
-                {isVaulted ? (
+                {isDropLocked ? (
+                  <form onSubmit={handleUnlockVip} className="p-5 bg-[var(--bg-surface)] border border-[var(--color-rust)]/40 space-y-3">
+                    <div className="flex items-center space-x-2 text-[var(--color-rust)]">
+                      <Lock className="w-4 h-4" />
+                      <span className="font-montserrat text-[10px] uppercase tracking-[0.25em] font-medium">
+                        VIP PRIVATE ACCESS LOCKED
+                      </span>
+                    </div>
+                    <p className="font-montserrat text-xs text-[var(--text-secondary)] font-light leading-relaxed">
+                      This private capsule look is currently reserved for registered allocation key holders before public drop.
+                    </p>
+                    <div className="flex gap-2 pt-1">
+                      <input
+                        type="password"
+                        value={enteredVipKey}
+                        onChange={(e) => {
+                          setEnteredVipKey(e.target.value);
+                          setVipKeyError(false);
+                        }}
+                        placeholder="Enter VIP Allocation Key..."
+                        className="flex-1 bg-[var(--bg-canvas)] border border-[var(--border-medium)] px-3 py-2.5 text-xs text-[var(--text-primary)] font-montserrat focus:outline-none focus:border-[var(--text-primary)]"
+                      />
+                      <button
+                        type="submit"
+                        className="px-5 py-2.5 bg-[var(--color-rust)] text-[#F5EFE4] font-montserrat text-xs uppercase tracking-[0.2em] font-medium hover:bg-[var(--color-rust)]/90 transition-colors"
+                      >
+                        UNLOCK
+                      </button>
+                    </div>
+                    {vipKeyError && (
+                      <p className="text-[10px] text-red-400 font-montserrat tracking-wider">
+                        Invalid VIP Allocation Key. Contact concierge for private invite.
+                      </p>
+                    )}
+                  </form>
+                ) : isVaulted ? (
                   <div className="p-4 bg-[var(--bg-surface)] border border-[var(--color-rust)]/40 text-center space-y-2">
                     <span className="font-montserrat text-[9px] uppercase tracking-[0.28em] text-[var(--color-rust)] font-medium block">
                       ARCHIVAL VAULT RECORD

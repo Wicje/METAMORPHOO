@@ -43,6 +43,8 @@ export interface Item {
     x: number; // Percentage 0 - 100 from left
     y: number; // Percentage 0 - 100 from top
   };
+  stockQuantity?: number;
+  isSoldOut?: boolean;
 }
 
 export interface Look {
@@ -58,7 +60,7 @@ export interface Look {
   tier: 'EDIT' | 'ORIGINALS';
   season: string; // e.g. 'Season I: The Inaugural Wardrobe'
   seasonCode: SeasonCode;
-  status: 'active' | 'low_stock' | 'vaulted';
+  status: 'active' | 'low_stock' | 'vaulted' | 'directory_only';
   allocationNotes?: string;
   oneRuleBroken: string;
   heroImage: string;
@@ -68,6 +70,10 @@ export interface Look {
     type: 'full' | 'texture' | 'accessory' | 'second_angle';
   }[];
   items: Item[];
+  editionTotal?: number;
+  allocatedCount?: number;
+  dropTimestamp?: number; // Epoch ms for scheduled drop countdowns
+  vipPassword?: string; // Optional password lock for early access drops
 }
 
 export interface CartItem {

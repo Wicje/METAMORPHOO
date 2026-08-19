@@ -1,16 +1,18 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
+import EditorialImage from './EditorialImage';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
   Bookmark,
   Trash2,
   ArrowRight,
+  Printer,
+  FileText,
 } from 'lucide-react';
 import { useLedger, ledgerStore } from '../lib/ledger-store';
-import { LAUNCH_LOOKS, ARCHIVE_VAULT_LOOKS } from '../lib/data';
+import { useCatalog } from '../lib/catalog-store';
 import { Look, Item } from '../lib/types';
 import { CURRENCIES, useCurrency } from '../lib/currency';
 
@@ -28,12 +30,13 @@ export default function LedgerModal({
   onSelectItem,
 }: LedgerModalProps) {
   const ledger = useLedger();
+  const catalog = useCatalog();
   const currency = useCurrency();
 
   if (!isOpen) return null;
 
   const currentCurrencyConfig = CURRENCIES[currency] || CURRENCIES.USD;
-  const allLooks = [...LAUNCH_LOOKS, ...ARCHIVE_VAULT_LOOKS];
+  const allLooks = [...catalog.customLaunchLooks, ...catalog.customArchiveLooks];
 
   // Resolve saved looks objects
   const savedLookObjects = ledger.savedLooks
@@ -54,6 +57,12 @@ export default function LedgerModal({
     .filter((entry): entry is { item: Item; look: Look } => Boolean(entry));
 
   const totalSavedCount = savedLookObjects.length + savedItemObjects.length;
+
+  const handlePrintDossier = () => {
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -87,14 +96,24 @@ export default function LedgerModal({
               </h2>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 sm:space-x-4">
               {totalSavedCount > 0 && (
-                <button
-                  onClick={() => ledgerStore.clearLedger()}
-                  className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)] hover:text-[var(--color-rust)] transition-colors"
-                >
-                  CLEAR REGISTER
-                </button>
+                <>
+                  <button
+                    onClick={handlePrintDossier}
+                    className="font-montserrat text-[9px] uppercase tracking-[0.2em] px-3 py-1.5 border border-[var(--border-medium)] hover:border-[var(--color-sand)] hover:text-[var(--color-sand)] text-[var(--text-primary)] transition-colors flex items-center space-x-1.5"
+                    title="Export printable sartorial dossier"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">EXPORT DOSSIER</span>
+                  </button>
+                  <button
+                    onClick={() => ledgerStore.clearLedger()}
+                    className="font-montserrat text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)] hover:text-[var(--color-rust)] transition-colors"
+                  >
+                    CLEAR
+                  </button>
+                </>
               )}
               <button
                 id="close-ledger-modal-btn"
@@ -137,12 +156,11 @@ export default function LedgerModal({
                           className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] overflow-hidden group flex flex-col justify-between"
                         >
                           <div className="relative aspect-[3/4] w-full overflow-hidden bg-[var(--bg-canvas)]">
-                            <Image
+                            <EditorialImage
                               src={look.heroImage}
                               alt={look.name}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-500"
-                              referrerPolicy="no-referrer"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-surface)] via-transparent to-transparent opacity-80" />
                             <div className="absolute top-2.5 left-2.5 flex items-center space-x-1.5">
@@ -208,12 +226,11 @@ export default function LedgerModal({
                         >
                           <div className="flex items-center space-x-3">
                             <div className="relative w-14 h-18 bg-[var(--bg-canvas)] flex-shrink-0 overflow-hidden border border-[var(--border-subtle)]">
-                              <Image
+                              <EditorialImage
                                 src={item.image}
                                 alt={item.name}
                                 fill
                                 className="object-cover"
-                                referrerPolicy="no-referrer"
                               />
                             </div>
                             <div className="space-y-1">

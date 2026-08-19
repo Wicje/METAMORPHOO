@@ -14,11 +14,12 @@ import CuratorStudioModal from '../components/CuratorStudioModal';
 import LedgerModal from '../components/LedgerModal';
 import ArchiveVaultView from '../components/ArchiveVaultView';
 import ConciergeChatWidget from '../components/ConciergeChatWidget';
+import ShortcutsModal from '../components/ShortcutsModal';
 import { Look, Item, CartItem } from '../lib/types';
 import { useCart } from '../lib/cart-store';
 import { useCatalog } from '../lib/catalog-store';
 import { useTheme, themeStore } from '../lib/theme';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Command } from 'lucide-react';
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'wardrobe' | 'archive' | 'edit' | 'originals' | 'house'>('wardrobe');
@@ -28,6 +29,7 @@ export default function HomePage() {
   const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
   const [isManifestoOpen, setIsManifestoOpen] = useState(false);
   const [isCuratorStudioOpen, setIsCuratorStudioOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [cartItems, setCartItems] = useCart();
   const catalog = useCatalog();
   const theme = useTheme();
@@ -36,6 +38,106 @@ export default function HomePage() {
   useEffect(() => {
     themeStore.init();
   }, []);
+
+  // Global Keyboard Shortcuts (J / K navigation, ESC to close, T for theme, B for bag, L for ledger, ? for HUD)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore when typing inside input / textarea
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        setSelectedLook(null);
+        setSelectedItem(null);
+        setIsWardrobeDrawerOpen(false);
+        setIsLedgerModalOpen(false);
+        setIsManifestoOpen(false);
+        setIsCuratorStudioOpen(false);
+        setIsShortcutsOpen(false);
+        return;
+      }
+
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setIsShortcutsOpen((prev) => !prev);
+        return;
+      }
+
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        themeStore.toggleTheme();
+        return;
+      }
+
+      if (e.key === 'b' || e.key === 'B') {
+        e.preventDefault();
+        setIsWardrobeDrawerOpen((prev) => !prev);
+        return;
+      }
+
+      if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
+        setIsLedgerModalOpen((prev) => !prev);
+        return;
+      }
+
+      // Secret Curator Studio trigger (Shift + Alt + A) — completely invisible to public shoppers
+      if (e.shiftKey && e.altKey && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        setIsCuratorStudioOpen((prev) => !prev);
+        return;
+      }
+
+      // Look navigation (J / K or Arrow keys) in wardrobe mode when no modal is open
+      if (activeTab === 'wardrobe' && !selectedLook && !selectedItem && !isWardrobeDrawerOpen && !isLedgerModalOpen && !isCuratorStudioOpen && !isShortcutsOpen) {
+        if (e.key === 'j' || e.key === 'J' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          const scrollPos = window.scrollY + window.innerHeight * 0.5;
+          const currentIdx = Math.floor(scrollPos / window.innerHeight);
+          const nextIdx = Math.min(currentIdx + 1, catalog.customLaunchLooks.length - 1);
+          const nextEl = document.getElementById(`look-section-${nextIdx}`);
+          if (nextEl) nextEl.scrollIntoView({ behavior: 'smooth' });
+        } else if (e.key === 'k' || e.key === 'K' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          const scrollPos = window.scrollY + window.innerHeight * 0.5;
+          const currentIdx = Math.floor(scrollPos / window.innerHeight);
+          const prevIdx = Math.max(currentIdx - 1, 0);
+          const prevEl = document.getElementById(`look-section-${prevIdx}`);
+          if (prevEl) prevEl.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, selectedLook, selectedItem, isWardrobeDrawerOpen, isLedgerModalOpen, isCuratorStudioOpen, isShortcutsOpen, catalog]);
+
+  // Handle URL deep linking for shared looks (e.g. /?look=the-sovereign-fluidity)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const targetSlug = params.get('look');
+    if (targetSlug) {
+      const allLooks = [...catalog.customLaunchLooks, ...catalog.customArchiveLooks];
+      const match = allLooks.find(
+        (l) => l.slug.toLowerCase() === targetSlug.toLowerCase() || l.id === targetSlug
+      );
+      if (match) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSelectedLook((prev) => (prev?.id === match.id ? prev : match));
+        if (match.seasonCode === 'ARCHIVE_VAULT' || match.status === 'vaulted') {
+          setActiveTab((prev) => (prev === 'archive' ? prev : 'archive'));
+        }
+      }
+    }
+
+    const adminParam = params.get('admin') || params.get('atelier');
+    if (adminParam === 'true' || adminParam === 'curator') {
+      setIsCuratorStudioOpen(true);
+    }
+  }, [catalog]);
 
   // Save cart to store
   const updateCart = (items: CartItem[]) => {
@@ -125,7 +227,7 @@ export default function HomePage() {
       {/* Main View Router */}
       {activeTab === 'wardrobe' && (
         <WardrobeScroll
-          looks={catalog.customLaunchLooks}
+          looks={catalog.customLaunchLooks.filter((l) => l.status !== 'directory_only')}
           onSelectLook={(look) => setSelectedLook(look)}
           onSelectItem={(item, look) => setSelectedItem({ item, look })}
           onShopFullLook={handleShopFullLook}
@@ -145,8 +247,10 @@ export default function HomePage() {
           looks={catalog.customLaunchLooks}
           onSelectItem={(item, look) => setSelectedItem({ item, look })}
           onSelectLook={(look) => {
-            setActiveTab('wardrobe');
-            setSelectedLook(look);
+            if (look.status !== 'directory_only') {
+              setActiveTab('wardrobe');
+              setSelectedLook(look);
+            }
           }}
         />
       )}
@@ -229,6 +333,12 @@ export default function HomePage() {
       <CuratorLedgerModal
         isOpen={isManifestoOpen}
         onClose={() => setIsManifestoOpen(false)}
+      />
+
+      {/* Keyboard Shortcuts Protocol HUD */}
+      <ShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
       />
 
       {/* Floating Active Atelier Concierge Widget */}
@@ -436,20 +546,11 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Bottom Bar with Copyright, Discreet Atelier Desk (Notion Sync), and Back to Top */}
+          {/* Bottom Bar with Copyright and Back to Top */}
           <div className="pt-8 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] font-montserrat uppercase tracking-[0.2em] text-[var(--text-muted)]">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               <span>© {new Date().getFullYear()} METAMORPHOO BUREAU.</span>
-              {/* Discrete Atelier Desk / Notion Sync Trigger - Unobtrusive & Eyes will not see it casually */}
-              <button
-                id="footer-atelier-desk-btn"
-                onClick={() => setIsCuratorStudioOpen(true)}
-                className="opacity-30 hover:opacity-100 hover:text-[var(--color-sand)] transition-all text-[8px] tracking-[0.25em] focus:outline-none"
-                title="Atelier Ingestion & Notion Sync Desk"
-                aria-label="Atelier Desk"
-              >
-                [ ATELIER DESK ]
-              </button>
+              <span>LAGOS · LISBON · MILAN</span>
             </div>
 
             <div className="hidden md:block text-[9px] tracking-[0.28em] text-[var(--color-sand)]">
